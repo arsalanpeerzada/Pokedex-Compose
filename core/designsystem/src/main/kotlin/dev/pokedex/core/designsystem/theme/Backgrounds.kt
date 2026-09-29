@@ -24,19 +24,24 @@ fun WeatherScene.brush(dark: Boolean): Brush {
 fun DexColors.brandBrush(): Brush = Brush.verticalGradient(listOf(brandGradientTop, brandGradientBottom))
 
 /** Detail-page background derived from the Pokémon's main type, standing in for artwork-based colour. */
-data class DetailPalette(val background: Brush, val content: Color, val contentSecondary: Color)
+/** The gradient stops are exposed so screens can animate between types. */
+data class DetailPalette(val top: Color, val bottom: Color, val content: Color, val contentSecondary: Color) {
+    val background: Brush get() = Brush.verticalGradient(listOf(top, bottom))
+}
 
 fun PokemonType.detailPalette(dark: Boolean): DetailPalette {
     val base = colour().container
     return if (dark) {
         DetailPalette(
-            background = Brush.verticalGradient(listOf(lerp(base, Color.Black, 0.58f), lerp(base, Color(0xFF0B0814), 0.9f))),
+            top = lerp(base, Color.Black, 0.58f),
+            bottom = lerp(base, Color(0xFF0B0814), 0.9f),
             content = Color(0xFFF7F2FF),
             contentSecondary = lerp(Color(0xFFF7F2FF), base, 0.22f),
         )
     } else {
         DetailPalette(
-            background = Brush.verticalGradient(listOf(lerp(base, Color.White, 0.35f), lerp(base, Color.White, 0.85f))),
+            top = lerp(base, Color.White, 0.35f),
+            bottom = lerp(base, Color.White, 0.85f),
             content = Color(0xFF1C1426),
             contentSecondary = Color(0xFF5D5470),
         )

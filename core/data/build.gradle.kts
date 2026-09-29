@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.library)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -14,4 +15,8 @@ android {
 
 dependencies {
     api(project(":core:model"))
+    implementation(project(":core:network"))
+    implementation(project(":core:database"))
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
 }

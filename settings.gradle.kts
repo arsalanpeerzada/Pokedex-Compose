@@ -19,6 +19,8 @@ rootProject.name = "Pokedex"
 include(
     ":app",
     ":core:model",
+    ":core:network",
+    ":core:database",
     ":core:data",
     ":core:designsystem",
     ":feature:today",

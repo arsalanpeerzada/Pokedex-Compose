@@ -60,15 +60,22 @@ fun DexGlassButton(
     ) { ButtonContent(text, icon) }
 }
 
-/** Button on a weather scene: dark glass, white label. */
+/** Button on a weather scene: dark glass, white label. Disabled, it fades back into the scene. */
 @Composable
-fun DexSceneButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun DexSceneButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
+    val onScene = DexTheme.colors.onScene
     OutlinedButton(
         onClick = onClick,
+        enabled = enabled,
         modifier = modifier.heightIn(min = 56.dp),
         shape = DexShape.xlButton,
-        border = BorderStroke(1.dp, SceneGlassEdge),
-        colors = ButtonDefaults.outlinedButtonColors(containerColor = SceneGlass, contentColor = DexTheme.colors.onScene),
+        border = BorderStroke(1.dp, if (enabled) SceneGlassEdge else SceneGlassEdge.copy(alpha = 0.15f)),
+        colors = ButtonDefaults.outlinedButtonColors(
+            containerColor = SceneGlass,
+            contentColor = onScene,
+            disabledContainerColor = SceneGlass.copy(alpha = 0.2f),
+            disabledContentColor = onScene.copy(alpha = 0.5f),
+        ),
         contentPadding = ButtonPadding,
     ) { Text(text, style = DexTheme.type.titleMedium) }
 }

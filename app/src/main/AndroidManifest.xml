@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Artwork is loaded from PokeAPI's sprite repository. -->
+    <!-- The Pokédex, artwork and cries come from PokeAPI and its sprite and cry repositories. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
+        android:name=".PokedexApplication"
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"

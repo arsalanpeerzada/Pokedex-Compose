@@ -1,5 +1,13 @@
 package dev.pokedex.core.designsystem.component
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.runtime.getValue
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -30,18 +38,23 @@ import dev.pokedex.core.model.PokemonType
 @Composable
 fun FilterPill(label: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val colors = DexTheme.colors
+    val background by animateColorAsState(if (selected) colors.primary else colors.surfaceGlass, label = "pillBackground")
+    val border by animateColorAsState(if (selected) colors.primary else colors.outline, label = "pillBorder")
+    val content by animateColorAsState(if (selected) colors.onPrimary else colors.text, label = "pillContent")
     Row(
         modifier = modifier
             .clip(DexShape.full)
-            .background(if (selected) colors.primary else colors.surfaceGlass)
-            .then(if (selected) Modifier else Modifier.border(1.dp, colors.outline, DexShape.full))
+            .background(background)
+            .border(1.dp, border, DexShape.full)
             .selectable(selected = selected, onClick = onClick, role = Role.Tab)
+            .animateContentSize()
             .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        val content = if (selected) colors.onPrimary else colors.text
-        if (selected) Icon(DexIcons.Check, contentDescription = null, tint = content, modifier = Modifier.size(14.dp))
+        AnimatedVisibility(selected, enter = scaleIn() + fadeIn(), exit = scaleOut() + fadeOut()) {
+            Icon(DexIcons.Check, contentDescription = null, tint = content, modifier = Modifier.size(14.dp))
+        }
         Text(label, style = DexTheme.type.labelMedium, color = content)
     }
 }

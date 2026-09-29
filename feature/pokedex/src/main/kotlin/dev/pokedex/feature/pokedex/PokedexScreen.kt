@@ -1,8 +1,16 @@
 package dev.pokedex.feature.pokedex
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,8 +29,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -30,31 +40,56 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.pokedex.core.data.SampleData
 import dev.pokedex.core.designsystem.component.DexChip
 import dev.pokedex.core.designsystem.component.DexIconButton
 import dev.pokedex.core.designsystem.component.DexPreviews
+import dev.pokedex.core.designsystem.component.DexPrimaryButton
 import dev.pokedex.core.designsystem.component.DexSearchField
 import dev.pokedex.core.designsystem.component.DexTopBar
+import dev.pokedex.core.designsystem.component.GlassCard
 import dev.pokedex.core.designsystem.component.PokemonArtwork
 import dev.pokedex.core.designsystem.component.TypeTag
 import dev.pokedex.core.designsystem.icon.DexIcons
+import dev.pokedex.core.designsystem.motion.pressScale
 import dev.pokedex.core.designsystem.theme.DexShape
 import dev.pokedex.core.designsystem.theme.DexTheme
 import dev.pokedex.core.designsystem.theme.colour
 import dev.pokedex.core.model.Pokemon
 
+/** Stateful entry point, wired to the repository through Hilt. */
+@Composable
+fun PokedexRoute(
+    onPokemonClick: (Pokemon) -> Unit,
+    onSettings: () -> Unit,
+    contentPadding: PaddingValues,
+    viewModel: PokedexViewModel = hiltViewModel(),
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    PokedexScreen(
+        state = state,
+        onPokemonClick = onPokemonClick,
+        onPokemonShown = viewModel::onShown,
+        onRetry = viewModel::refresh,
+        onTypeChart = {}, onSort = {}, onSettings = onSettings, onFilters = {},
+        contentPadding = contentPadding,
+    )
+}
+
 /** The reference browser: every Pokémon in full, on cards in its type colour. */
 @Composable
 fun PokedexScreen(
-    pokemon: List<Pokemon>,
-    caughtIds: Set<Int>,
-    totalCount: Int,
+    state: PokedexUiState,
     onPokemonClick: (Pokemon) -> Unit,
+    onPokemonShown: (Int) -> Unit,
+    onRetry: () -> Unit,
     onTypeChart: () -> Unit,
     onSort: () -> Unit,
     onSettings: () -> Unit,
@@ -64,7 +99,8 @@ fun PokedexScreen(
 ) {
     val colors = DexTheme.colors
     var query by rememberSaveable { mutableStateOf("") }
-    val shown = pokemon.filter { query.isBlank() || it.name.contains(query.trim(), ignoreCase = true) || it.number.contains(query.trim()) }
+    val q = query.trim()
+    val shown = if (q.isEmpty()) state.pokemon else state.pokemon.filter { it.name.contains(q, ignoreCase = true) || it.number.contains(q) }
 
     Column(modifier.fillMaxSize().background(colors.background)) {
         DexTopBar(title = "Pokédex") {
@@ -88,29 +124,46 @@ fun PokedexScreen(
                         DexChip("Generation", onFilters)
                         DexChip("Legendary", onFilters)
                     }
-                    Text("%,d Pokémon · all available offline".format(totalCount), style = DexTheme.type.labelMedium, color = colors.textSecondary)
+                    if (state.pokemon.isNotEmpty()) {
+                        Text("%,d Pokémon".format(state.pokemon.size), style = DexTheme.type.labelMedium, color = colors.textSecondary)
+                    }
                 }
             }
-            items(shown, key = { it.id }) { p -> TypeCard(p, caught = p.id in caughtIds, onClick = { onPokemonClick(p) }) }
+            when {
+                state.failed -> item(span = { GridItemSpan(maxLineSpan) }) { ErrorCard(onRetry) }
+                state.loading -> items(8) { SkeletonCard() }
+                shown.isEmpty() -> item(span = { GridItemSpan(maxLineSpan) }) {
+                    Text("No Pokémon match '$q'.", style = DexTheme.type.bodyLarge, color = colors.textSecondary, modifier = Modifier.padding(vertical = 24.dp))
+                }
+                else -> items(shown, key = { it.id }) { p ->
+                    LaunchedEffect(p.id, p.hasDetails) { if (!p.hasDetails) onPokemonShown(p.id) }
+                    TypeCard(p, caught = p.id in state.caughtIds, onClick = { onPokemonClick(p) }, modifier = Modifier.animateItem())
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun TypeCard(pokemon: Pokemon, caught: Boolean, onClick: () -> Unit) {
+private fun TypeCard(pokemon: Pokemon, caught: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val dark = DexTheme.colors.isDark
     val c = pokemon.primaryType.colour()
-    val bottom = if (dark) lerp(c.container, Color(0xFF110C1A), 0.2f) else lerp(c.container, Color.White, 0.28f)
+    // Cards start neutral and blend into their type colour once details arrive.
+    val top by animateColorAsState(c.container, tween(500), label = "cardTop")
+    val content by animateColorAsState(c.content, tween(500), label = "cardContent")
+    val bottom = if (dark) lerp(top, Color(0xFF110C1A), 0.2f) else lerp(top, Color.White, 0.28f)
+    val interaction = remember { MutableInteractionSource() }
     Box(
-        Modifier
+        modifier
+            .pressScale(interaction)
             .height(156.dp)
             .clip(DexShape.card)
-            .background(Brush.verticalGradient(listOf(c.container, bottom)))
-            .clickable(onClick = onClick)
+            .background(Brush.verticalGradient(listOf(top, bottom)))
+            .clickable(interactionSource = interaction, indication = LocalIndication.current, onClick = onClick)
             .semantics(mergeDescendants = true) {
                 contentDescription = buildString {
-                    append(pokemon.name).append(", number ").append(pokemon.number).append(", ")
-                    append(pokemon.types.joinToString(" and ") { it.displayName })
+                    append(pokemon.name).append(", number ").append(pokemon.number)
+                    if (pokemon.types.isNotEmpty()) append(", ").append(pokemon.types.joinToString(" and ") { it.displayName })
                     if (caught) append(", caught")
                 }
             },
@@ -123,9 +176,9 @@ private fun TypeCard(pokemon: Pokemon, caught: Boolean, onClick: () -> Unit) {
             modifier = Modifier.align(Alignment.BottomEnd).offset(x = (-4).dp, y = (-2).dp),
         )
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("#${pokemon.number}", style = DexTheme.type.numberSmall, color = c.content)
-            Text(pokemon.name, style = DexTheme.type.titleLarge, color = c.content)
-            pokemon.types.forEach { TypeTag(it, c.content) }
+            Text("#${pokemon.number}", style = DexTheme.type.numberSmall, color = content)
+            Text(pokemon.name, style = DexTheme.type.titleLarge, color = content, maxLines = 1)
+            pokemon.types.forEach { TypeTag(it, content) }
         }
         if (caught) {
             Box(
@@ -143,15 +196,40 @@ private fun TypeCard(pokemon: Pokemon, caught: Boolean, onClick: () -> Unit) {
     }
 }
 
+/** Pulsing placeholder while the first index download runs. */
+@Composable
+private fun SkeletonCard() {
+    val alpha by rememberInfiniteTransition(label = "skeleton").animateFloat(
+        initialValue = 0.45f,
+        targetValue = 0.9f,
+        animationSpec = infiniteRepeatable(tween(800), RepeatMode.Reverse),
+        label = "skeletonAlpha",
+    )
+    Box(
+        Modifier
+            .height(156.dp)
+            .graphicsLayer { this.alpha = alpha }
+            .clip(DexShape.card)
+            .background(DexTheme.colors.surface),
+    )
+}
+
+@Composable
+private fun ErrorCard(onRetry: () -> Unit) {
+    GlassCard {
+        Text("Couldn't download the Pokédex", style = DexTheme.type.titleMedium, color = DexTheme.colors.text)
+        Text("Check your connection. Once it's downloaded, it works offline.", style = DexTheme.type.bodyMedium, color = DexTheme.colors.textSecondary)
+        DexPrimaryButton("Try again", onRetry)
+    }
+}
+
 @DexPreviews
 @Composable
 private fun PokedexScreenPreview() {
     DexTheme {
         PokedexScreen(
-            pokemon = SampleData.generationOne.take(6),
-            caughtIds = SampleData.caught,
-            totalCount = 1025,
-            onPokemonClick = {}, onTypeChart = {}, onSort = {}, onSettings = {}, onFilters = {},
+            state = PokedexUiState(pokemon = SampleData.generationOne.take(6), caughtIds = SampleData.caught, loading = false),
+            onPokemonClick = {}, onPokemonShown = {}, onRetry = {}, onTypeChart = {}, onSort = {}, onSettings = {}, onFilters = {},
         )
     }
 }

@@ -1,6 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.hilt)
 }
 
 android {
@@ -8,8 +10,8 @@ android {
     compileSdk = 37
 
     defaultConfig {
-        // Placeholder ID until you choose one (plan section 12).
-        applicationId = "dev.pokedex.app"
+        // Settled before the first test release; changing it later would create a new app on Play.
+        applicationId = "io.github.arsalanpeerzada.pokedex"
         minSdk = 26
         targetSdk = 37
         versionCode = 1
@@ -41,7 +43,11 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.coil.network.okhttp)
+
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
 }

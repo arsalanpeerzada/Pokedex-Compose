@@ -6,14 +6,13 @@ enum class CollectionState { Caught, Seen, Unseen }
 data class CollectionEntry(
     val pokemon: Pokemon,
     val state: CollectionState,
+    val favourite: Boolean = false,
 )
 
 data class CollectionSummary(
     val caught: Int,
     val total: Int,
+    /** 0 until the daily guess tracks streaks. */
     val streakDays: Int,
     val latestCaught: List<Pokemon>,
-    val generationLabel: String,
-    val generationCaught: Int,
-    val generationTotal: Int,
 )

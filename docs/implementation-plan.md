@@ -271,6 +271,17 @@ Two-week sprints, each ending with a Substack issue.
 | 5 | Hardening: UI and screenshot tests, Baseline Profiles, benchmarks, accessibility pass, v1.0 via App Distribution | Before-and-after performance numbers |
 | 6 to 8 | v2: live wallpaper, real-size AR, Tap-to-Dex, World today map, Compare, air quality | AR and wallpaper clips |
 
+**Sprint 1 progress (29 September 2026).**
+- Done:
+  - Project setup and the theme from the Figma foundations.
+  - PokeAPI index into Room, with lazy, cached details (Hilt, Ktor, Room, `:core:network` and `:core:database`).
+  - The Pokédex grid on real data.
+  - Collection, Detail and Today reading real data.
+  - Motion: shared-element artwork between screens, staggered entrances, press feedback, an animated navigation bar, and the Today shake and reveal.
+- Pulled forward from Sprint 2: cries and card-to-detail transitions.
+- Pulled forward from Sprint 3: a basic guess and reveal, with the pick seeded by date only and no weather yet.
+- Still to do in Sprint 1: CI and Crashlytics.
+
 ## 9. Distribution
 
 - **v1:** Firebase App Distribution for testers, plus signed APKs on GitHub Releases for followers.
@@ -305,9 +316,9 @@ Two-week sprints, each ending with a Substack issue.
 1. Font pairing: Adventure (default), Arcade or Device (section 7).
 2. Weather refresh interval: every three hours (recommended) or hourly.
 3. Religious festivals in the special-days calendar: include or not.
-4. Application ID, for example `io.github.<your-username>.pokedex` (needed at scaffold time).
-
-Decided: crash reports are off by default, like usage stats (29 September 2026).
+Decided:
+- Crash reports are off by default, like usage stats (29 September 2026).
+- The application ID is `io.github.arsalanpeerzada.pokedex` (29 September 2026). Code namespaces stay `dev.pokedex.*`.
 
 The Figma plan is settled for now: Starter with a Full seat, revisited only if reads run short (section 7).
 

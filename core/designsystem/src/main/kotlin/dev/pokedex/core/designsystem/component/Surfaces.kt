@@ -1,5 +1,10 @@
 package dev.pokedex.core.designsystem.component
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -69,8 +74,11 @@ fun SceneCard(
     )
 }
 
+/** Fills from empty on first show, then follows changes smoothly. */
 @Composable
 fun DexProgressBar(progress: Float, modifier: Modifier = Modifier, track: Color = DexTheme.colors.track, bar: Color = DexTheme.colors.primary) {
+    val animated = remember { Animatable(0f) }
+    LaunchedEffect(progress) { animated.animateTo(progress.coerceIn(0.02f, 1f), tween(900, easing = FastOutSlowInEasing)) }
     Box(
         modifier
             .height(8.dp)
@@ -79,7 +87,7 @@ fun DexProgressBar(progress: Float, modifier: Modifier = Modifier, track: Color 
     ) {
         Box(
             Modifier
-                .fillMaxWidth(progress.coerceIn(0.02f, 1f))
+                .fillMaxWidth(animated.value.coerceAtLeast(0.02f))
                 .height(8.dp)
                 .clip(DexShape.full)
                 .background(bar),

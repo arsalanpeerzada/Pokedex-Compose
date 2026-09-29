@@ -18,7 +18,7 @@ import dev.pokedex.core.model.Weather
 import dev.pokedex.core.model.WeatherScene
 
 /**
- * Hand-written sample data matching the Figma designs, used until the PokeAPI + Room data layer lands.
+ * Hand-written data for previews, and for Today until the context engine lands (Sprint 3).
  * Pikachu's facts come from PokeAPI (checked 29 September 2026); other entries carry names and types only.
  */
 object SampleData {
@@ -45,29 +45,19 @@ object SampleData {
         Pokemon(16, "Pidgey", listOf(Normal, Flying)),
     )
 
-    private val caughtIds = setOf(1, 2, 3, 4)
-    private val seenIds = setOf(5, 6, 7)
-
-    val caught: Set<Int> get() = caughtIds
+    val caught: Set<Int> = setOf(1, 2, 3, 4)
+    private val seen = setOf(5, 6, 7)
 
     val collection: List<CollectionEntry> = generationOne.map { pokemon ->
         val state = when (pokemon.id) {
-            in caughtIds -> CollectionState.Caught
-            in seenIds -> CollectionState.Seen
+            in caught -> CollectionState.Caught
+            in seen -> CollectionState.Seen
             else -> CollectionState.Unseen
         }
         CollectionEntry(pokemon, state)
     }
 
-    val collectionSummary = CollectionSummary(
-        caught = 212,
-        total = 1025,
-        streakDays = 12,
-        latestCaught = listOf(gengar, eevee, pikachu),
-        generationLabel = "Generation I",
-        generationCaught = 58,
-        generationTotal = 151,
-    )
+    val collectionSummary = CollectionSummary(caught = 212, total = 1025, streakDays = 12, latestCaught = listOf(gengar, eevee, pikachu))
 
     val today = DailyPick(
         city = "London",
@@ -78,6 +68,4 @@ object SampleData {
         weatherHint = "Stormy in London tonight.",
         hintsLeft = 2,
     )
-
-    fun pokemon(id: Int): Pokemon? = (generationOne + listOf(pikachu, eevee, gengar)).firstOrNull { it.id == id }
 }

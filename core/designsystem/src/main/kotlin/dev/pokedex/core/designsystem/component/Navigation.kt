@@ -1,5 +1,9 @@
 package dev.pokedex.core.designsystem.component
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -7,15 +11,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,7 +34,7 @@ import dev.pokedex.core.designsystem.theme.DexTheme
 
 data class NavItem(val label: String, val icon: ImageVector)
 
-/** Glass navigation bar with a pill indicator, as in the Figma screens. */
+/** Glass navigation bar. The indicator pill springs open under the selected tab. */
 @Composable
 fun DexNavigationBar(items: List<NavItem>, selectedIndex: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
     val colors = DexTheme.colors
@@ -42,6 +49,13 @@ fun DexNavigationBar(items: List<NavItem>, selectedIndex: Int, onSelect: (Int) -
     ) {
         items.forEachIndexed { index, item ->
             val selected = index == selectedIndex
+            val pillWidth by animateDpAsState(
+                targetValue = if (selected) 64.dp else 32.dp,
+                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow),
+                label = "pillWidth",
+            )
+            val pill by animateColorAsState(if (selected) colors.navIndicator else colors.navIndicator.copy(alpha = 0f), label = "pill")
+            val tint by animateColorAsState(if (selected) colors.primary else colors.textSecondary, label = "tint")
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -51,12 +65,13 @@ fun DexNavigationBar(items: List<NavItem>, selectedIndex: Int, onSelect: (Int) -
             ) {
                 Box(
                     Modifier
-                        .size(width = 64.dp, height = 32.dp)
+                        .width(pillWidth)
+                        .height(32.dp)
                         .clip(DexShape.large)
-                        .background(if (selected) colors.navIndicator else colors.navIndicator.copy(alpha = 0f)),
+                        .background(pill),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(item.icon, contentDescription = null, tint = if (selected) colors.primary else colors.textSecondary, modifier = Modifier.size(24.dp))
+                    Icon(item.icon, contentDescription = null, tint = tint, modifier = Modifier.size(24.dp))
                 }
                 Text(
                     item.label,

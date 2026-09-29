@@ -1,5 +1,13 @@
 package dev.pokedex.app
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,33 +18,38 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
+import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import androidx.navigation3.ui.NavDisplay
-import dev.pokedex.core.data.SampleData
 import dev.pokedex.core.designsystem.component.DexNavigationBar
 import dev.pokedex.core.designsystem.component.NavItem
 import dev.pokedex.core.designsystem.icon.DexIcons
+import dev.pokedex.core.designsystem.motion.LocalNavAnimatedScope
+import dev.pokedex.core.designsystem.motion.LocalSharedTransitionScope
 import dev.pokedex.core.designsystem.theme.DexTheme
 import dev.pokedex.core.designsystem.theme.brandBrush
-import dev.pokedex.feature.collection.CollectionScreen
-import dev.pokedex.feature.detail.PokemonDetailScreen
-import dev.pokedex.feature.pokedex.PokedexScreen
-import dev.pokedex.feature.today.TodayScreen
+import dev.pokedex.feature.collection.CollectionRoute
+import dev.pokedex.feature.detail.PokemonDetailRoute
+import dev.pokedex.feature.pokedex.PokedexRoute
+import dev.pokedex.feature.today.TodayRoute
 
-sealed interface Route
-data object TodayRoute : Route
-data object PokedexRoute : Route
-data object TeamsRoute : Route
-data object CollectionRoute : Route
-data class DetailRoute(val pokemonId: Int) : Route
+sealed interface Destination
+data object TodayKey : Destination
+data object PokedexKey : Destination
+data object TeamsKey : Destination
+data object CollectionKey : Destination
+data class DetailKey(val pokemonId: Int) : Destination
 
-private val TopLevel = listOf(TodayRoute, PokedexRoute, TeamsRoute, CollectionRoute)
+private val TopLevel = listOf(TodayKey, PokedexKey, TeamsKey, CollectionKey)
 private val NavItems = listOf(
     NavItem("Today", DexIcons.Sun),
     NavItem("Pokédex", DexIcons.Grid),
@@ -46,77 +59,84 @@ private val NavItems = listOf(
 
 /**
  * App shell: four tabs plus the shared detail page, on Navigation 3 (we own the back stack).
- * Data is still the hand-written sample set until the PokeAPI + Room layer lands.
+ * Each destination gets its own ViewModel store, and artwork flies between screens as a shared element.
  */
 @Composable
 fun PokedexApp() {
-    val backStack = remember { mutableStateListOf<Route>(TodayRoute) }
-    val caught = remember { mutableStateListOf<Int>().apply { addAll(SampleData.caught) } }
-    val showNav = backStack.lastOrNull() !is DetailRoute
-    val openDetail: (Int) -> Unit = { id -> backStack.add(DetailRoute(id)) }
+    val backStack = remember { mutableStateListOf<Destination>(TodayKey) }
+    val showNav = backStack.lastOrNull() !is DetailKey
+    val openDetail: (Int) -> Unit = { id -> backStack.add(DetailKey(id)) }
 
     Scaffold(
         containerColor = Color.Transparent,
         contentWindowInsets = WindowInsets(0),
         bottomBar = {
-            if (showNav) {
+            AnimatedVisibility(
+                visible = showNav,
+                enter = slideInVertically(tween(300)) { it } + fadeIn(tween(300)),
+                exit = slideOutVertically(tween(250)) { it } + fadeOut(tween(250)),
+            ) {
                 DexNavigationBar(
                     items = NavItems,
                     selectedIndex = TopLevel.indexOf(backStack.first()),
                     onSelect = { i ->
-                        backStack.clear()
-                        backStack.add(TopLevel[i])
+                        if (backStack.size != 1 || backStack.first() != TopLevel[i]) {
+                            backStack.clear()
+                            backStack.add(TopLevel[i])
+                        }
                     },
                 )
             }
         },
     ) { padding ->
-        NavDisplay(
-            backStack = backStack,
-            onBack = { backStack.removeLastOrNull() },
-            entryProvider = entryProvider {
-                entry<TodayRoute> {
-                    TodayScreen(
-                        pick = SampleData.today,
-                        onGuess = { choice -> if (choice.id == SampleData.today.answer.id) openDetail(choice.id) },
-                        onUseHint = {},
-                        onSettings = {},
-                        contentPadding = padding,
-                    )
-                }
-                entry<PokedexRoute> {
-                    PokedexScreen(
-                        pokemon = SampleData.generationOne,
-                        caughtIds = caught.toSet(),
-                        totalCount = 1025,
-                        onPokemonClick = { openDetail(it.id) },
-                        onTypeChart = {}, onSort = {}, onSettings = {}, onFilters = {},
-                        contentPadding = padding,
-                    )
-                }
-                entry<TeamsRoute> { ComingSoon("Team Builder", "Designed next, once Figma is available again.", padding) }
-                entry<CollectionRoute> {
-                    CollectionScreen(
-                        summary = SampleData.collectionSummary,
-                        entries = SampleData.collection,
-                        onPokemonClick = { openDetail(it.id) },
-                        onSearch = {}, onSettings = {},
-                        contentPadding = padding,
-                    )
-                }
-                entry<DetailRoute> { key ->
-                    val pokemon = SampleData.pokemon(key.pokemonId) ?: SampleData.pikachu
-                    PokemonDetailScreen(
-                        pokemon = pokemon,
-                        caught = pokemon.id in caught,
-                        onBack = { backStack.removeLastOrNull() },
-                        onToggleCaught = { if (!caught.remove(pokemon.id)) caught.add(pokemon.id) },
-                        onAddToTeam = {}, onFavourite = {}, onShare = {}, onPlayCry = {},
-                    )
-                }
-            },
-        )
+        SharedTransitionLayout {
+            CompositionLocalProvider(LocalSharedTransitionScope provides this) {
+                NavDisplay(
+                    backStack = backStack,
+                    onBack = { backStack.removeLastOrNull() },
+                    entryDecorators = listOf(
+                        rememberSaveableStateHolderNavEntryDecorator(),
+                        rememberViewModelStoreNavEntryDecorator(),
+                    ),
+                    sharedTransitionScope = this,
+                    transitionSpec = { fadeIn(tween(300)) togetherWith fadeOut(tween(300)) },
+                    popTransitionSpec = { fadeIn(tween(300)) togetherWith fadeOut(tween(300)) },
+                    predictivePopTransitionSpec = { fadeIn(tween(300)) togetherWith fadeOut(tween(300)) },
+                    entryProvider = entryProvider {
+                        entry<TodayKey> {
+                            Animated {
+                                TodayRoute(onOpenEntry = { openDetail(it.id) }, onSettings = {}, contentPadding = padding)
+                            }
+                        }
+                        entry<PokedexKey> {
+                            Animated {
+                                PokedexRoute(onPokemonClick = { openDetail(it.id) }, onSettings = {}, contentPadding = padding)
+                            }
+                        }
+                        entry<TeamsKey> {
+                            ComingSoon("Team Builder", "Designed next, once Figma is available again.", padding)
+                        }
+                        entry<CollectionKey> {
+                            Animated {
+                                CollectionRoute(onPokemonClick = { openDetail(it.id) }, onSettings = {}, contentPadding = padding)
+                            }
+                        }
+                        entry<DetailKey> { key ->
+                            Animated {
+                                PokemonDetailRoute(pokemonId = key.pokemonId, onBack = { backStack.removeLastOrNull() })
+                            }
+                        }
+                    },
+                )
+            }
+        }
     }
+}
+
+/** Hands this destination's enter and exit animation to shared elements further down. */
+@Composable
+private fun Animated(content: @Composable () -> Unit) {
+    CompositionLocalProvider(LocalNavAnimatedScope provides LocalNavAnimatedContentScope.current, content = content)
 }
 
 @Composable

@@ -15,14 +15,24 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import dev.pokedex.core.designsystem.motion.dexSharedElement
+import dev.pokedex.core.designsystem.motion.floating
+import dev.pokedex.core.designsystem.motion.rememberPulse
 import dev.pokedex.core.designsystem.theme.DexTheme
 import dev.pokedex.core.designsystem.theme.colour
 import dev.pokedex.core.model.Pokemon
 
-/** Official artwork with a soft radial glow behind it. */
+/** Shared-element key for a Pokémon's artwork, used by every screen that shows it. */
+fun artworkKey(pokemonId: Int) = "artwork-$pokemonId"
+
+/**
+ * Official artwork with a soft radial glow behind it. With [animated], the glow breathes and the
+ * artwork floats. The image is a shared element, so it flies between screens.
+ */
 @Composable
 fun PokemonArtwork(
     pokemon: Pokemon,
@@ -30,24 +40,28 @@ fun PokemonArtwork(
     modifier: Modifier = Modifier,
     glow: Color = pokemon.primaryType.colour().container,
     glowAlpha: Float = 0.5f,
+    animated: Boolean = false,
 ) {
+    val pulse = if (animated) rememberPulse() else 1f
     Box(modifier.size(size), contentAlignment = Alignment.Center) {
         Box(
             Modifier
                 .fillMaxSize()
+                .graphicsLayer { scaleX = pulse; scaleY = pulse }
                 .background(Brush.radialGradient(listOf(glow.copy(alpha = glowAlpha), Color.Transparent))),
         )
         AsyncImage(
             model = pokemon.artworkUrl,
             contentDescription = pokemon.name,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .then(if (animated) Modifier.floating() else Modifier)
+                .dexSharedElement(artworkKey(pokemon.id)),
         )
     }
 }
 
-/**
- * The same artwork tinted to a flat colour. The description never gives the answer away.
- */
+/** The same artwork tinted to a flat colour. The description never gives the answer away. */
 @Composable
 fun PokemonSilhouette(
     pokemon: Pokemon,
