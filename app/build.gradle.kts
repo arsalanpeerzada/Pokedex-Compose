@@ -39,6 +39,7 @@ dependencies {
     implementation(project(":feature:pokedex"))
     implementation(project(":feature:detail"))
     implementation(project(":feature:collection"))
+    implementation(project(":feature:settings"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

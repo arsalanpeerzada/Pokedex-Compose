@@ -17,6 +17,7 @@ dependencies {
     api(project(":core:model"))
     implementation(project(":core:network"))
     implementation(project(":core:database"))
+    implementation(libs.androidx.datastore.preferences)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
 

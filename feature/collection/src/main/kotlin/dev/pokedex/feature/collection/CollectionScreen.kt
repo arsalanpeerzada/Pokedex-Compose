@@ -77,7 +77,6 @@ fun CollectionRoute(
         entries = state.entries,
         onPokemonClick = onPokemonClick,
         onPokemonShown = viewModel::onShown,
-        onSearch = {},
         onSettings = onSettings,
         contentPadding = contentPadding,
     )
@@ -90,7 +89,6 @@ fun CollectionScreen(
     entries: List<CollectionEntry>,
     onPokemonClick: (Pokemon) -> Unit,
     onPokemonShown: (Int) -> Unit,
-    onSearch: () -> Unit,
     onSettings: () -> Unit,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(),
@@ -108,7 +106,6 @@ fun CollectionScreen(
 
     Column(modifier.fillMaxSize().background(colors.brandBrush())) {
         DexTopBar(title = "Collection") {
-            DexIconButton(DexIcons.Search, "Search the collection", onSearch)
             DexIconButton(DexIcons.Settings, "Settings", onSettings)
         }
         LazyVerticalGrid(
@@ -226,6 +223,6 @@ private fun AlbumCard(entry: CollectionEntry, onClick: () -> Unit, modifier: Mod
 @Composable
 private fun CollectionScreenPreview() {
     DexTheme {
-        CollectionScreen(SampleData.collectionSummary, SampleData.collection, onPokemonClick = {}, onPokemonShown = {}, onSearch = {}, onSettings = {})
+        CollectionScreen(SampleData.collectionSummary, SampleData.collection, onPokemonClick = {}, onPokemonShown = {}, onSettings = {})
     }
 }

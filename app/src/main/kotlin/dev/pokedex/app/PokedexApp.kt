@@ -41,6 +41,7 @@ import dev.pokedex.feature.collection.CollectionRoute
 import dev.pokedex.feature.detail.PokemonDetailRoute
 import dev.pokedex.feature.pokedex.PokedexRoute
 import dev.pokedex.feature.pokedex.TypeChartRoute
+import dev.pokedex.feature.settings.SettingsRoute
 import dev.pokedex.feature.today.TodayRoute
 
 sealed interface Destination
@@ -50,6 +51,7 @@ data object TeamsKey : Destination
 data object CollectionKey : Destination
 data class DetailKey(val pokemonId: Int) : Destination
 data object TypeChartKey : Destination
+data object SettingsKey : Destination
 
 private val TopLevel = listOf(TodayKey, PokedexKey, TeamsKey, CollectionKey)
 private val NavItems = listOf(
@@ -68,6 +70,7 @@ fun PokedexApp() {
     val backStack = remember { mutableStateListOf<Destination>(TodayKey) }
     val showNav = backStack.lastOrNull()?.let { it in TopLevel } == true
     val openDetail: (Int) -> Unit = { id -> backStack.add(DetailKey(id)) }
+    val openSettings: () -> Unit = { if (backStack.lastOrNull() != SettingsKey) backStack.add(SettingsKey) }
 
     Scaffold(
         containerColor = Color.Transparent,
@@ -107,7 +110,7 @@ fun PokedexApp() {
                     entryProvider = entryProvider {
                         entry<TodayKey> {
                             Animated {
-                                TodayRoute(onOpenEntry = { openDetail(it.id) }, onSettings = {}, contentPadding = padding)
+                                TodayRoute(onOpenEntry = { openDetail(it.id) }, onSettings = openSettings, contentPadding = padding)
                             }
                         }
                         entry<PokedexKey> {
@@ -115,7 +118,7 @@ fun PokedexApp() {
                                 PokedexRoute(
                                     onPokemonClick = { openDetail(it.id) },
                                     onTypeChart = { backStack.add(TypeChartKey) },
-                                    onSettings = {},
+                                    onSettings = openSettings,
                                     contentPadding = padding,
                                 )
                             }
@@ -125,11 +128,14 @@ fun PokedexApp() {
                         }
                         entry<CollectionKey> {
                             Animated {
-                                CollectionRoute(onPokemonClick = { openDetail(it.id) }, onSettings = {}, contentPadding = padding)
+                                CollectionRoute(onPokemonClick = { openDetail(it.id) }, onSettings = openSettings, contentPadding = padding)
                             }
                         }
                         entry<TypeChartKey> {
                             TypeChartRoute(onBack = { backStack.removeLastOrNull() })
+                        }
+                        entry<SettingsKey> {
+                            SettingsRoute(onBack = { backStack.removeLastOrNull() })
                         }
                         entry<DetailKey> { key ->
                             Animated {

@@ -27,4 +27,5 @@ include(
     ":feature:pokedex",
     ":feature:detail",
     ":feature:collection",
+    ":feature:settings",
 )
