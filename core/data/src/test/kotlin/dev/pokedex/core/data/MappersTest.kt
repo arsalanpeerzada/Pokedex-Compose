@@ -5,8 +5,10 @@ import dev.pokedex.core.network.model.DamageRelations
 import dev.pokedex.core.network.model.EvolutionChainDto
 import dev.pokedex.core.network.model.EvolutionDetail
 import dev.pokedex.core.network.model.NamedResource
+import dev.pokedex.core.network.model.SpeciesDto
 import dev.pokedex.core.network.model.TypeDto
 import dev.pokedex.core.network.model.TypePokemon
+import dev.pokedex.core.network.model.Variety
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -92,6 +94,35 @@ class MappersTest {
         assertEquals("High friendship, at night", EvolutionDetail(trigger = levelUp, minHappiness = 160, timeOfDay = "night").describe())
         assertEquals("Trade", EvolutionDetail(trigger = resource("evolution-trigger", "trade")).describe())
         assertEquals("Level up", EvolutionDetail(trigger = levelUp, timeOfDay = "").describe())
+    }
+
+    private fun species(name: String, vararg forms: Pair<String, Int>) = SpeciesDto(
+        id = 1,
+        name = name,
+        captureRate = 45,
+        varieties = listOf(Variety(true, resource("pokemon", name, 1))) +
+            forms.map { (form, id) -> Variety(false, resource("pokemon", form, id)) },
+    )
+
+    @Test
+    fun `forms get readable labels and never show a region`() {
+        val charizard = species("charizard", "charizard-mega-x" to 10034, "charizard-mega-y" to 10035, "charizard-gmax" to 10196)
+        assertEquals(
+            listOf("Mega Charizard X", "Mega Charizard Y", "Gigantamax Charizard"),
+            charizard.alternateForms("Charizard").map { it.label },
+        )
+        assertEquals(listOf("Vulpix, alternate form"), species("vulpix", "vulpix-alola" to 10103).alternateForms("Vulpix").map { it.label })
+        assertEquals(listOf("Rotom (Heat)"), species("rotom", "rotom-heat" to 10008).alternateForms("Rotom").map { it.label })
+    }
+
+    @Test
+    fun `shared neutral labels are numbered, and forms round-trip`() {
+        val tauros = species("tauros", "tauros-paldea-combat-breed" to 10250, "tauros-paldea-blaze-breed" to 10251)
+        val forms = tauros.alternateForms("Tauros")
+        assertEquals(listOf("Tauros, alternate form 1", "Tauros, alternate form 2"), forms.map { it.label })
+        assertEquals(forms, decodeForms(forms.encode()))
+        assertEquals(emptyList<Any>(), decodeForms(""))
+        assertNull(decodeForms(null))
     }
 
     @Test

@@ -42,6 +42,8 @@ data class PokemonEntity(
     val specialDefense: Int? = null,
     val speed: Int? = null,
     val evolutionChainId: Int? = null,
+    /** Alternate forms as "id:label" pairs joined by "|"; empty when there are none, null until loaded. */
+    val forms: String? = null,
 )
 
 /** What the user has done: caught, seen, favourite. Kept apart so a data refresh never touches it. */
@@ -92,7 +94,7 @@ interface PokemonDao {
     suspend fun count(): Int
 
     /** Null if the species isn't in the index yet. Rows cached before stats existed count as needing details. */
-    @Query("SELECT (detailsLoaded = 0 OR hp IS NULL) FROM pokemon WHERE id = :id")
+    @Query("SELECT (detailsLoaded = 0 OR hp IS NULL OR forms IS NULL) FROM pokemon WHERE id = :id")
     suspend fun needsDetails(id: Int): Boolean?
 
     @Query("SELECT COUNT(*) FROM pokemon WHERE types = ''")

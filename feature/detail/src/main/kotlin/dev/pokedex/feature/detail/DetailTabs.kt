@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,6 +33,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import dev.pokedex.core.designsystem.component.GlassCard
 import dev.pokedex.core.designsystem.component.PokemonAvatar
 import dev.pokedex.core.designsystem.component.TypeBadge
@@ -125,6 +127,29 @@ private fun factorLabel(factor: Float): String = when (factor) {
     0.25f -> "¼×"
     0.5f -> "½×"
     else -> "${factor.toInt()}×"
+}
+
+@Composable
+internal fun FormsCard(pokemon: Pokemon, content: Color, secondary: Color) {
+    GlassCard {
+        val forms = pokemon.forms
+        when {
+            forms == null -> Text("Loading forms…", style = DexTheme.type.bodyLarge, color = secondary)
+            forms.isEmpty() -> Text("${pokemon.name} has no alternate forms.", style = DexTheme.type.bodyLarge, color = content)
+            else -> FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                forms.forEach { form ->
+                    Column(
+                        Modifier.width(132.dp).semantics(mergeDescendants = true) {},
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        AsyncImage(model = form.artworkUrl, contentDescription = null, modifier = Modifier.size(112.dp))
+                        Text(form.label, style = DexTheme.type.labelMedium, color = content, textAlign = TextAlign.Center)
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable

@@ -291,11 +291,11 @@ Two-week sprints, each ending with a Substack issue.
 - Sprint 2 work done early:
   - Search, type and generation filters, and sort.
   - The type chart screen.
-  - Detail tabs for Stats, Matchups and Evolution.
+  - All five Detail tabs: About, Stats, Evolution, Matchups and Forms.
 - Also done:
   - Today saves its progress per date and keeps a real streak.
   - A Settings screen: theme, privacy choices (both off) and About with the font licences.
-- Open question: alternate forms, because many are named after regions (for example "raichu-alola"), which the no-regions rule excludes. The Forms tab stays "coming soon" until this is decided.
+- Forms follow the no-regions rule. A form whose name includes a region gets a neutral label, such as "Vulpix, alternate form". Other forms read naturally, for example "Mega Charizard X" or "Rotom (Heat)".
 
 ## 9. Distribution
 

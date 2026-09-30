@@ -197,9 +197,7 @@ fun PokemonDetailScreen(
                         1 -> StatsCard(pokemon, content, secondary)
                         2 -> EvolutionCard(pokemon, evolution, onOpenPokemon, content, secondary)
                         3 -> MatchupsCard(pokemon, chart, content, secondary)
-                        else -> GlassCard {
-                            Text("Forms are coming soon.", style = DexTheme.type.bodyLarge, color = content)
-                        }
+                        else -> FormsCard(pokemon, content, secondary)
                     }
                 }
             }

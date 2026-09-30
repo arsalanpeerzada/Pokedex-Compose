@@ -101,10 +101,11 @@ class OfflineFirstPokemonRepository @Inject constructor(
                 val s = species.await()
                 val entry = s.latestEnglishEntry()
                 val stats = p.stats.associate { it.stat.name to it.baseStat }
+                val name = s.names.firstOrNull { it.language.name == "en" }?.name ?: displayName(s.name)
                 pokemonDao.update(
                     PokemonEntity(
                         id = id,
-                        name = s.names.firstOrNull { it.language.name == "en" }?.name ?: displayName(s.name),
+                        name = name,
                         types = p.types.sortedBy { it.slot }.joinToString(",") { it.type.name },
                         heightDecimetres = p.height,
                         weightHectograms = p.weight,
@@ -123,6 +124,7 @@ class OfflineFirstPokemonRepository @Inject constructor(
                         specialDefense = stats["special-defense"],
                         speed = stats["speed"],
                         evolutionChainId = s.evolutionChain?.id,
+                        forms = s.alternateForms(name).encode(),
                     ),
                 )
             }
@@ -194,6 +196,7 @@ private fun PokemonEntity.toModel() = Pokemon(
     isMythical = isMythical,
     stats = baseStats(),
     evolutionChainId = evolutionChainId,
+    forms = decodeForms(forms),
     hasDetails = detailsLoaded,
 )
 

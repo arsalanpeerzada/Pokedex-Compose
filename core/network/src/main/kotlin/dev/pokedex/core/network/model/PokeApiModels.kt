@@ -85,7 +85,12 @@ data class SpeciesDto(
     val names: List<LocalName> = emptyList(),
     @SerialName("flavor_text_entries") val flavorTextEntries: List<FlavorText> = emptyList(),
     @SerialName("evolution_chain") val evolutionChain: UrlResource? = null,
+    val varieties: List<Variety> = emptyList(),
 )
+
+/** One form of a species; the default is the species itself. */
+@Serializable
+data class Variety(@SerialName("is_default") val isDefault: Boolean, val pokemon: NamedResource)
 
 @Serializable
 data class UrlResource(val url: String) {

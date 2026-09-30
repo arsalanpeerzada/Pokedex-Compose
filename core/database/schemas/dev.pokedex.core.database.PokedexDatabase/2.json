@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 2,
-    "identityHash": "ccbfdfb5f6490de221aab52129b66f71",
+    "identityHash": "0bc64548d04fdc61c8eb7f1803e11bc5",
     "entities": [
       {
         "tableName": "pokemon",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `name` TEXT NOT NULL, `types` TEXT NOT NULL, `heightDecimetres` INTEGER, `weightHectograms` INTEGER, `category` TEXT, `catchRate` INTEGER, `flavourText` TEXT, `flavourVersion` TEXT, `cryUrl` TEXT, `isLegendary` INTEGER NOT NULL, `isMythical` INTEGER NOT NULL, `detailsLoaded` INTEGER NOT NULL, `hp` INTEGER, `attack` INTEGER, `defense` INTEGER, `specialAttack` INTEGER, `specialDefense` INTEGER, `speed` INTEGER, `evolutionChainId` INTEGER, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `name` TEXT NOT NULL, `types` TEXT NOT NULL, `heightDecimetres` INTEGER, `weightHectograms` INTEGER, `category` TEXT, `catchRate` INTEGER, `flavourText` TEXT, `flavourVersion` TEXT, `cryUrl` TEXT, `isLegendary` INTEGER NOT NULL, `isMythical` INTEGER NOT NULL, `detailsLoaded` INTEGER NOT NULL, `hp` INTEGER, `attack` INTEGER, `defense` INTEGER, `specialAttack` INTEGER, `specialDefense` INTEGER, `speed` INTEGER, `evolutionChainId` INTEGER, `forms` TEXT, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -113,6 +113,11 @@
             "fieldPath": "evolutionChainId",
             "columnName": "evolutionChainId",
             "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "forms",
+            "columnName": "forms",
+            "affinity": "TEXT"
           }
         ],
         "primaryKey": {
@@ -273,7 +278,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'ccbfdfb5f6490de221aab52129b66f71')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '0bc64548d04fdc61c8eb7f1803e11bc5')"
     ]
   }
 }

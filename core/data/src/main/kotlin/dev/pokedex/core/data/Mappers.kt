@@ -2,6 +2,7 @@ package dev.pokedex.core.data
 
 import dev.pokedex.core.database.EvolutionEntity
 import dev.pokedex.core.database.TypeEfficacyEntity
+import dev.pokedex.core.model.PokemonForm
 import dev.pokedex.core.network.model.ChainLink
 import dev.pokedex.core.network.model.EvolutionChainDto
 import dev.pokedex.core.network.model.EvolutionDetail
@@ -71,6 +72,46 @@ internal fun EvolutionDetail.describe(): String {
         "night" -> parts += "at night"
     }
     return parts.joinToString(", ")
+}
+
+/**
+ * Form names from PokeAPI that contain a region. The app never shows regions (a product rule),
+ * so these forms get a neutral label. This list only filters; it is never displayed.
+ */
+private val RegionTokens = setOf("alola", "galar", "hisui", "paldea")
+
+/** Alternate forms with readable, region-free labels, for example "Mega Charizard X" or "Vulpix, alternate form". */
+internal fun SpeciesDto.alternateForms(speciesName: String): List<PokemonForm> {
+    val labelled = varieties.filter { !it.isDefault }.map { variety ->
+        val parts = variety.pokemon.name.removePrefix("$name-").split('-')
+        val label = when {
+            parts.any { it in RegionTokens } -> "$speciesName, alternate form"
+            parts.first() == "mega" -> (listOf("Mega $speciesName") + parts.drop(1).map { it.uppercase() }).joinToString(" ")
+            parts.first() == "gmax" -> "Gigantamax $speciesName"
+            parts.first() == "primal" -> "Primal $speciesName"
+            else -> "$speciesName (${displayName(parts.joinToString("-"))})"
+        }
+        PokemonForm(variety.pokemon.id, label)
+    }
+    // Several forms can share a neutral label; number them so each stays distinct.
+    val counts = labelled.groupingBy { it.label }.eachCount()
+    val seen = mutableMapOf<String, Int>()
+    return labelled.map { form ->
+        if ((counts[form.label] ?: 0) < 2) form else form.copy(label = "${form.label} ${seen.merge(form.label, 1, Int::plus)}")
+    }
+}
+
+internal fun List<PokemonForm>.encode(): String = joinToString("|") { "${it.id}:${it.label}" }
+
+internal fun decodeForms(value: String?): List<PokemonForm>? = value?.let { encoded ->
+    if (encoded.isEmpty()) {
+        emptyList()
+    } else {
+        encoded.split('|').mapNotNull { entry ->
+            val id = entry.substringBefore(':').toIntOrNull() ?: return@mapNotNull null
+            PokemonForm(id, entry.substringAfter(':'))
+        }
+    }
 }
 
 /** Consecutive solved days ending today, or yesterday if today isn't solved yet. */

@@ -41,6 +41,8 @@ data class Pokemon(
     val isMythical: Boolean = false,
     val stats: BaseStats? = null,
     val evolutionChainId: Int? = null,
+    /** Alternate forms (not the default). Null until details load. */
+    val forms: List<PokemonForm>? = null,
     /** False until the lazy detail fetch has filled the facts. Types can arrive earlier, from the type index. */
     val hasDetails: Boolean = true,
 ) {

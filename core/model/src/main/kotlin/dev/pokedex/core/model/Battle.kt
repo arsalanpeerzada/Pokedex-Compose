@@ -47,6 +47,12 @@ data class EvolutionStep(
     val method: String?,
 )
 
+/** An alternate form. [id] is PokeAPI's pokemon id (above 10,000), which also finds its artwork. */
+data class PokemonForm(val id: Int, val label: String) {
+    val artworkUrl: String
+        get() = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/$id.png"
+}
+
 /** The user's result for one day's Pokémon, keyed by the local date. */
 data class DailyResult(
     val epochDay: Long,

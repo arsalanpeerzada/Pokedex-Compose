@@ -110,7 +110,7 @@ private class FakePokemonDao : PokemonDao {
     override fun observeAll(): Flow<List<PokemonEntity>> = rows.map { it.values.sortedBy(PokemonEntity::id) }
     override fun observe(id: Int): Flow<PokemonEntity?> = rows.map { it[id] }
     override suspend fun count() = rows.value.size
-    override suspend fun needsDetails(id: Int) = rows.value[id]?.let { !it.detailsLoaded || it.hp == null }
+    override suspend fun needsDetails(id: Int) = rows.value[id]?.let { !it.detailsLoaded || it.hp == null || it.forms == null }
     override suspend fun countWithoutTypes() = rows.value.values.count { it.types.isEmpty() }
     override suspend fun insertIndex(items: List<PokemonEntity>) {
         rows.value = rows.value + items.filter { it.id !in rows.value }.associateBy { it.id }
