@@ -52,6 +52,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -306,7 +307,7 @@ private fun TabRow(selected: Int, onSelect: (Int) -> Unit, content: Color, conte
             Modifier
                 .matchParentSize()
                 .wrapContentWidth(Alignment.Start)
-                .offset(x = indicatorOffset)
+                .offset { IntOffset(indicatorOffset.roundToPx(), 0) }
                 .width(tabWidth)
                 .clip(DexShape.full)
                 .background(colors.surface),

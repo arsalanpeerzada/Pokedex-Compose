@@ -1,6 +1,8 @@
 package dev.pokedex.core.network
 
+import dev.pokedex.core.network.model.EvolutionChainDto
 import dev.pokedex.core.network.model.PokemonDto
+import dev.pokedex.core.network.model.TypeDto
 import dev.pokedex.core.network.model.ResourceList
 import dev.pokedex.core.network.model.SpeciesDto
 import io.ktor.client.HttpClient
@@ -24,4 +26,9 @@ class PokeApi @Inject constructor(private val client: HttpClient) {
     suspend fun pokemon(id: Int): PokemonDto = client.get("pokemon/$id").body()
 
     suspend fun species(id: Int): SpeciesDto = client.get("pokemon-species/$id").body()
+
+    /** One of the 18 types, by lower-case name: its damage relations and every Pokémon that has it. */
+    suspend fun type(name: String): TypeDto = client.get("type/$name").body()
+
+    suspend fun evolutionChain(id: Int): EvolutionChainDto = client.get("evolution-chain/$id").body()
 }

@@ -7,8 +7,11 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import dev.pokedex.core.database.DailyResultDao
+import dev.pokedex.core.database.EvolutionDao
 import dev.pokedex.core.database.PokedexDatabase
 import dev.pokedex.core.database.PokemonDao
+import dev.pokedex.core.database.TypeDao
 import dev.pokedex.core.database.UserStateDao
 import javax.inject.Singleton
 
@@ -26,4 +29,13 @@ object DatabaseModule {
 
     @Provides
     fun userStateDao(db: PokedexDatabase): UserStateDao = db.userStateDao()
+
+    @Provides
+    fun typeDao(db: PokedexDatabase): TypeDao = db.typeDao()
+
+    @Provides
+    fun evolutionDao(db: PokedexDatabase): EvolutionDao = db.evolutionDao()
+
+    @Provides
+    fun dailyResultDao(db: PokedexDatabase): DailyResultDao = db.dailyResultDao()
 }

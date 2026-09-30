@@ -1,16 +1,21 @@
 package dev.pokedex.core.data
 
+import dev.pokedex.core.database.EvolutionDao
 import dev.pokedex.core.database.PokemonDao
 import dev.pokedex.core.database.PokemonEntity
+import dev.pokedex.core.database.TypeDao
 import dev.pokedex.core.database.UserStateDao
 import dev.pokedex.core.database.UserStateEntity
+import dev.pokedex.core.model.BaseStats
+import dev.pokedex.core.model.EvolutionStep
 import dev.pokedex.core.model.Pokemon
 import dev.pokedex.core.model.PokemonType
+import dev.pokedex.core.model.TypeChart
 import dev.pokedex.core.model.UserState
 import dev.pokedex.core.network.PokeApi
-import dev.pokedex.core.network.model.SpeciesDto
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -27,12 +32,14 @@ class OfflineFirstPokemonRepository @Inject constructor(
     private val api: PokeApi,
     private val pokemonDao: PokemonDao,
     private val userStateDao: UserStateDao,
+    private val typeDao: TypeDao,
+    private val evolutionDao: EvolutionDao,
 ) : PokemonRepository {
 
     private val indexMutex = Mutex()
-    // Be gentle with PokeAPI: at most four detail fetches at once, and never the same one twice.
-    private val detailPermits = Semaphore(4)
-    private val inFlight = ConcurrentHashMap.newKeySet<Int>()
+    // Be gentle with PokeAPI: at most four requests at once, and never the same resource twice.
+    private val permits = Semaphore(4)
+    private val inFlight = ConcurrentHashMap.newKeySet<String>()
 
     override fun pokedex(): Flow<List<Pokemon>> = pokemonDao.observeAll().map { rows -> rows.map { it.toModel() } }
 
@@ -42,55 +49,104 @@ class OfflineFirstPokemonRepository @Inject constructor(
         rows.associate { it.id to UserState(caughtAt = it.caughtAt, seen = it.seen, favourite = it.favourite) }
     }
 
-    override suspend fun refreshIndex(): Result<Unit> = indexMutex.withLock {
-        try {
-            if (pokemonDao.count() >= MIN_EXPECTED_SPECIES) return@withLock Result.success(Unit)
-            val index = api.speciesIndex()
-            pokemonDao.insertIndex(index.results.map { PokemonEntity(id = it.id, name = displayName(it.name)) })
-            Result.success(Unit)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+    override fun typeChart(): Flow<TypeChart> = typeDao.observeAll().map { rows ->
+        TypeChart(
+            rows.mapNotNull { row ->
+                val attacker = PokemonType.fromApiName(row.attacker) ?: return@mapNotNull null
+                val defender = PokemonType.fromApiName(row.defender) ?: return@mapNotNull null
+                (attacker to defender) to row.factor
+            }.toMap(),
+        )
     }
 
-    override suspend fun ensureDetails(id: Int) {
-        if (pokemonDao.detailsLoaded(id) != false) return
-        if (!inFlight.add(id)) return
+    override fun evolution(chainId: Int): Flow<List<EvolutionStep>> = evolutionDao.observeChain(chainId).map { rows ->
+        rows.map { EvolutionStep(it.speciesId, it.name, it.fromId, it.method) }
+    }
+
+    override suspend fun refreshIndex(): Result<Unit> = indexMutex.withLock {
         try {
-            detailPermits.withPermit {
-                coroutineScope {
-                    val pokemon = async { api.pokemon(id) }
-                    val species = async { api.species(id) }
-                    val p = pokemon.await()
-                    val s = species.await()
-                    val entry = s.latestEnglishEntry()
-                    pokemonDao.update(
-                        PokemonEntity(
-                            id = id,
-                            name = s.names.firstOrNull { it.language.name == "en" }?.name ?: displayName(s.name),
-                            types = p.types.sortedBy { it.slot }.joinToString(",") { it.type.name },
-                            heightDecimetres = p.height,
-                            weightHectograms = p.weight,
-                            category = s.genera.firstOrNull { it.language.name == "en" }?.genus,
-                            catchRate = s.captureRate,
-                            flavourText = entry?.first,
-                            flavourVersion = entry?.second,
-                            cryUrl = p.cries?.latest,
-                            isLegendary = s.isLegendary,
-                            isMythical = s.isMythical,
-                            detailsLoaded = true,
-                        ),
-                    )
-                }
+            if (pokemonDao.count() < MIN_EXPECTED_SPECIES) {
+                val index = api.speciesIndex()
+                pokemonDao.insertIndex(index.results.map { PokemonEntity(id = it.id, name = displayName(it.name)) })
             }
         } catch (e: CancellationException) {
             throw e
+        } catch (e: Exception) {
+            return@withLock Result.failure(e)
+        }
+        // The type index is a bonus: without it, types still arrive with each Pokémon's details.
+        runCatchingNonCancel { refreshTypeIndex() }
+        Result.success(Unit)
+    }
+
+    /** 18 requests give every Pokémon its types and the whole type chart. */
+    private suspend fun refreshTypeIndex() {
+        if (typeDao.count() > 0 && pokemonDao.countWithoutTypes() == 0) return
+        val types = coroutineScope {
+            PokemonType.entries.map { type ->
+                async { permits.withPermit { api.type(type.name.lowercase()) } }
+            }.awaitAll()
+        }
+        typeDao.upsert(types.flatMap { it.toEfficacyRows() })
+        pokemonDao.setTypes(typesBySpecies(types))
+    }
+
+    override suspend fun ensureDetails(id: Int) {
+        if (pokemonDao.needsDetails(id) != true) return
+        fetchOnce("details-$id") {
+            coroutineScope {
+                val pokemon = async { api.pokemon(id) }
+                val species = async { api.species(id) }
+                val p = pokemon.await()
+                val s = species.await()
+                val entry = s.latestEnglishEntry()
+                val stats = p.stats.associate { it.stat.name to it.baseStat }
+                pokemonDao.update(
+                    PokemonEntity(
+                        id = id,
+                        name = s.names.firstOrNull { it.language.name == "en" }?.name ?: displayName(s.name),
+                        types = p.types.sortedBy { it.slot }.joinToString(",") { it.type.name },
+                        heightDecimetres = p.height,
+                        weightHectograms = p.weight,
+                        category = s.genera.firstOrNull { it.language.name == "en" }?.genus,
+                        catchRate = s.captureRate,
+                        flavourText = entry?.first,
+                        flavourVersion = entry?.second,
+                        cryUrl = p.cries?.latest,
+                        isLegendary = s.isLegendary,
+                        isMythical = s.isMythical,
+                        detailsLoaded = true,
+                        hp = stats["hp"],
+                        attack = stats["attack"],
+                        defense = stats["defense"],
+                        specialAttack = stats["special-attack"],
+                        specialDefense = stats["special-defense"],
+                        speed = stats["speed"],
+                        evolutionChainId = s.evolutionChain?.id,
+                    ),
+                )
+            }
+        }
+    }
+
+    override suspend fun ensureEvolution(chainId: Int) {
+        if (evolutionDao.count(chainId) > 0) return
+        fetchOnce("chain-$chainId") {
+            evolutionDao.upsert(flattenChain(api.evolutionChain(chainId)))
+        }
+    }
+
+    /** Runs [block] under a request permit unless the same key is already running. Offline errors are swallowed. */
+    private suspend fun fetchOnce(key: String, block: suspend () -> Unit) {
+        if (!inFlight.add(key)) return
+        try {
+            permits.withPermit { block() }
+        } catch (e: CancellationException) {
+            throw e
         } catch (_: Exception) {
-            // Offline or rate-limited: the card stays neutral and we try again next time it's shown.
+            // Offline or rate-limited: we try again the next time it's needed.
         } finally {
-            inFlight.remove(id)
+            inFlight.remove(key)
         }
     }
 
@@ -114,6 +170,15 @@ class OfflineFirstPokemonRepository @Inject constructor(
     }
 }
 
+private suspend fun runCatchingNonCancel(block: suspend () -> Unit) {
+    try {
+        block()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: Exception) {
+    }
+}
+
 private fun PokemonEntity.toModel() = Pokemon(
     id = id,
     name = name,
@@ -127,15 +192,18 @@ private fun PokemonEntity.toModel() = Pokemon(
     cryUrl = cryUrl,
     isLegendary = isLegendary,
     isMythical = isMythical,
+    stats = baseStats(),
+    evolutionChainId = evolutionChainId,
     hasDetails = detailsLoaded,
 )
 
-/** "mr-mime" becomes "Mr Mime" until the proper English name arrives with the details. */
-private fun displayName(apiName: String) =
-    apiName.split('-').joinToString(" ") { part -> part.replaceFirstChar { it.uppercase() } }
-
-/** The newest English Pokédex entry, with line breaks from the games cleaned up. */
-private fun SpeciesDto.latestEnglishEntry(): Pair<String, String>? =
-    flavorTextEntries.lastOrNull { it.language.name == "en" }?.let { entry ->
-        entry.text.replace(Regex("[\\n\\u000c\\r]+"), " ").replace(Regex("\\s+"), " ").trim() to displayName(entry.version.name)
-    }
+private fun PokemonEntity.baseStats(): BaseStats? {
+    return BaseStats(
+        hp = hp ?: return null,
+        attack = attack ?: return null,
+        defense = defense ?: return null,
+        specialAttack = specialAttack ?: return null,
+        specialDefense = specialDefense ?: return null,
+        speed = speed ?: return null,
+    )
+}

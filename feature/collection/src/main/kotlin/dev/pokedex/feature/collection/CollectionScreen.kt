@@ -28,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -158,7 +159,7 @@ private fun LazyGridScope.fullWidth(key: String, content: @Composable LazyGridIt
 private fun SummaryCard(summary: CollectionSummary) {
     val colors = DexTheme.colors
     // Counts up from zero the first time the album opens.
-    var target by remember { mutableStateOf(0) }
+    var target by remember { mutableIntStateOf(0) }
     LaunchedEffect(summary.caught) { target = summary.caught }
     val shownCount by animateIntAsState(target, tween(1100), label = "caughtCount")
     GlassCard {

@@ -39,7 +39,9 @@ data class Pokemon(
     val cryUrl: String? = null,
     val isLegendary: Boolean = false,
     val isMythical: Boolean = false,
-    /** False until the lazy detail fetch has filled types and facts. */
+    val stats: BaseStats? = null,
+    val evolutionChainId: Int? = null,
+    /** False until the lazy detail fetch has filled the facts. Types can arrive earlier, from the type index. */
     val hasDetails: Boolean = true,
 ) {
     /** Four-digit Pokédex number, for example "0025". */
