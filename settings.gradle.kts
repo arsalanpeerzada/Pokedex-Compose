@@ -29,4 +29,5 @@ include(
     ":feature:collection",
     ":feature:settings",
     ":feature:onboarding",
+    ":feature:teams",
 )

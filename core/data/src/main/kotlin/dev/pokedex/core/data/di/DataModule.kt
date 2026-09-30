@@ -16,6 +16,8 @@ import dev.pokedex.core.data.DataStoreUserPreferencesRepository
 import dev.pokedex.core.data.OfflineFirstPokemonRepository
 import dev.pokedex.core.data.PokemonRepository
 import dev.pokedex.core.data.RoomDailyRepository
+import dev.pokedex.core.data.RoomTeamRepository
+import dev.pokedex.core.data.TeamRepository
 import dev.pokedex.core.data.UserPreferencesRepository
 import javax.inject.Singleton
 
@@ -27,6 +29,9 @@ abstract class DataModule {
 
     @Binds
     abstract fun dailyRepository(impl: RoomDailyRepository): DailyRepository
+
+    @Binds
+    abstract fun teamRepository(impl: RoomTeamRepository): TeamRepository
 
     @Binds
     abstract fun userPreferencesRepository(impl: DataStoreUserPreferencesRepository): UserPreferencesRepository

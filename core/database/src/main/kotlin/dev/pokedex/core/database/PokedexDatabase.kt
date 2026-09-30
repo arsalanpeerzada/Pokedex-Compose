@@ -3,11 +3,13 @@ package dev.pokedex.core.database
 import androidx.room.AutoMigration
 import androidx.room.Dao
 import androidx.room.Database
+import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
+import androidx.room.Relation
 import androidx.room.RoomDatabase
 import androidx.room.Transaction
 import androidx.room.Update
@@ -80,6 +82,22 @@ data class DailyResultEntity(
     /** Comma-separated species ids. */
     val wrongGuesses: String,
     val hintsUsed: Int,
+)
+
+@Entity(tableName = "team")
+data class TeamEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,
+    val createdAt: Long,
+)
+
+/** One filled slot (0 to 5) of a team. Empty slots have no row. */
+@Entity(tableName = "team_member", primaryKeys = ["teamId", "slot"])
+data class TeamMemberEntity(val teamId: Long, val slot: Int, val pokemonId: Int)
+
+data class TeamWithMembers(
+    @Embedded val team: TeamEntity,
+    @Relation(parentColumn = "id", entityColumn = "teamId") val members: List<TeamMemberEntity>,
 )
 
 @Dao
@@ -169,6 +187,37 @@ interface DailyResultDao {
     suspend fun upsert(result: DailyResultEntity)
 }
 
+@Dao
+interface TeamDao {
+    @Transaction
+    @Query("SELECT * FROM team ORDER BY createdAt")
+    fun observeAll(): Flow<List<TeamWithMembers>>
+
+    @Insert
+    suspend fun insert(team: TeamEntity): Long
+
+    @Query("UPDATE team SET name = :name WHERE id = :id")
+    suspend fun rename(id: Long, name: String)
+
+    @Query("DELETE FROM team WHERE id = :id")
+    suspend fun deleteTeam(id: Long)
+
+    @Query("DELETE FROM team_member WHERE teamId = :id")
+    suspend fun deleteMembers(id: Long)
+
+    @Transaction
+    suspend fun delete(id: Long) {
+        deleteMembers(id)
+        deleteTeam(id)
+    }
+
+    @Upsert
+    suspend fun upsertMember(member: TeamMemberEntity)
+
+    @Query("DELETE FROM team_member WHERE teamId = :teamId AND slot = :slot")
+    suspend fun removeMember(teamId: Long, slot: Int)
+}
+
 @Database(
     entities = [
         PokemonEntity::class,
@@ -176,10 +225,12 @@ interface DailyResultDao {
         TypeEfficacyEntity::class,
         EvolutionEntity::class,
         DailyResultEntity::class,
+        TeamEntity::class,
+        TeamMemberEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
-    autoMigrations = [AutoMigration(from = 1, to = 2)],
+    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3)],
 )
 abstract class PokedexDatabase : RoomDatabase() {
     abstract fun pokemonDao(): PokemonDao
@@ -187,4 +238,5 @@ abstract class PokedexDatabase : RoomDatabase() {
     abstract fun typeDao(): TypeDao
     abstract fun evolutionDao(): EvolutionDao
     abstract fun dailyResultDao(): DailyResultDao
+    abstract fun teamDao(): TeamDao
 }

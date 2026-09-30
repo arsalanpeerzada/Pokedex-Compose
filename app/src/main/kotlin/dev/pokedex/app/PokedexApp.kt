@@ -8,23 +8,13 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
@@ -35,13 +25,13 @@ import dev.pokedex.core.designsystem.component.NavItem
 import dev.pokedex.core.designsystem.icon.DexIcons
 import dev.pokedex.core.designsystem.motion.LocalNavAnimatedScope
 import dev.pokedex.core.designsystem.motion.LocalSharedTransitionScope
-import dev.pokedex.core.designsystem.theme.DexTheme
-import dev.pokedex.core.designsystem.theme.brandBrush
 import dev.pokedex.feature.collection.CollectionRoute
 import dev.pokedex.feature.detail.PokemonDetailRoute
 import dev.pokedex.feature.pokedex.PokedexRoute
 import dev.pokedex.feature.pokedex.TypeChartRoute
 import dev.pokedex.feature.settings.SettingsRoute
+import dev.pokedex.feature.teams.TeamEditorRoute
+import dev.pokedex.feature.teams.TeamsRoute
 import dev.pokedex.feature.today.TodayRoute
 
 sealed interface Destination
@@ -52,6 +42,7 @@ data object CollectionKey : Destination
 data class DetailKey(val pokemonId: Int) : Destination
 data object TypeChartKey : Destination
 data object SettingsKey : Destination
+data class TeamKey(val teamId: Long) : Destination
 
 private val TopLevel = listOf(TodayKey, PokedexKey, TeamsKey, CollectionKey)
 private val NavItems = listOf(
@@ -124,7 +115,14 @@ fun PokedexApp() {
                             }
                         }
                         entry<TeamsKey> {
-                            ComingSoon("Team Builder", "Designed next, once Figma is available again.", padding)
+                            Animated {
+                                TeamsRoute(onOpenTeam = { backStack.add(TeamKey(it)) }, onSettings = openSettings, contentPadding = padding)
+                            }
+                        }
+                        entry<TeamKey> { key ->
+                            Animated {
+                                TeamEditorRoute(teamId = key.teamId, onBack = { backStack.removeLastOrNull() }, onOpenPokemon = openDetail)
+                            }
                         }
                         entry<CollectionKey> {
                             Animated {
@@ -157,17 +155,4 @@ fun PokedexApp() {
 @Composable
 private fun Animated(content: @Composable () -> Unit) {
     CompositionLocalProvider(LocalNavAnimatedScope provides LocalNavAnimatedContentScope.current, content = content)
-}
-
-@Composable
-private fun ComingSoon(title: String, body: String, padding: PaddingValues) {
-    val colors = DexTheme.colors
-    Column(
-        Modifier.fillMaxSize().background(colors.brandBrush()).padding(padding).padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(title, style = DexTheme.type.headlineMedium, color = colors.text)
-        Text(body, style = DexTheme.type.bodyLarge, color = colors.textSecondary)
-    }
 }

@@ -41,6 +41,7 @@ dependencies {
     implementation(project(":feature:collection"))
     implementation(project(":feature:settings"))
     implementation(project(":feature:onboarding"))
+    implementation(project(":feature:teams"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

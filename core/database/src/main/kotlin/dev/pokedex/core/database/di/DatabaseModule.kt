@@ -11,6 +11,7 @@ import dev.pokedex.core.database.DailyResultDao
 import dev.pokedex.core.database.EvolutionDao
 import dev.pokedex.core.database.PokedexDatabase
 import dev.pokedex.core.database.PokemonDao
+import dev.pokedex.core.database.TeamDao
 import dev.pokedex.core.database.TypeDao
 import dev.pokedex.core.database.UserStateDao
 import javax.inject.Singleton
@@ -38,4 +39,7 @@ object DatabaseModule {
 
     @Provides
     fun dailyResultDao(db: PokedexDatabase): DailyResultDao = db.dailyResultDao()
+
+    @Provides
+    fun teamDao(db: PokedexDatabase): TeamDao = db.teamDao()
 }
