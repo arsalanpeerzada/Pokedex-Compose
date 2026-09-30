@@ -44,6 +44,7 @@ import dev.pokedex.core.designsystem.component.DexTextField
 import dev.pokedex.core.designsystem.component.DexTopBar
 import dev.pokedex.core.designsystem.component.FilterPill
 import dev.pokedex.core.designsystem.component.GlassCard
+import dev.pokedex.core.designsystem.component.rememberNotificationPermission
 import dev.pokedex.core.designsystem.icon.DexIcons
 import dev.pokedex.core.designsystem.theme.DexTheme
 import dev.pokedex.core.model.ThemeMode
@@ -63,6 +64,7 @@ class SettingsViewModel @Inject constructor(private val repository: UserPreferen
     fun setUsageStats(enabled: Boolean) = viewModelScope.launch { repository.setUsageStats(enabled) }
     fun setCrashReports(enabled: Boolean) = viewModelScope.launch { repository.setCrashReports(enabled) }
     fun setCity(city: String) = viewModelScope.launch { repository.setCity(city) }
+    fun setReminder(enabled: Boolean) = viewModelScope.launch { repository.setReminder(enabled) }
 }
 
 @Composable
@@ -77,6 +79,7 @@ fun SettingsRoute(onBack: () -> Unit, viewModel: SettingsViewModel = hiltViewMod
         onUsageStats = { viewModel.setUsageStats(it) },
         onCrashReports = { viewModel.setCrashReports(it) },
         onCity = { viewModel.setCity(it) },
+        onReminder = { viewModel.setReminder(it) },
         readLicence = { name -> context.assets.open("licenses/$name").bufferedReader().use { it.readText() } },
     )
 }
@@ -92,10 +95,16 @@ fun SettingsScreen(
     onUsageStats: (Boolean) -> Unit,
     onCrashReports: (Boolean) -> Unit,
     onCity: (String) -> Unit,
+    onReminder: (Boolean) -> Unit,
     readLicence: (String) -> String,
     modifier: Modifier = Modifier,
 ) {
     val colors = DexTheme.colors
+    var notificationsBlocked by rememberSaveable { mutableStateOf(false) }
+    val askForNotifications = rememberNotificationPermission { granted ->
+        notificationsBlocked = !granted
+        if (granted) onReminder(true)
+    }
     var licence by rememberSaveable { mutableStateOf<String?>(null) }
     var city by rememberSaveable(preferences.city) { mutableStateOf(preferences.city.orEmpty()) }
     val cityChanged = city.trim() != preferences.city.orEmpty()
@@ -136,6 +145,21 @@ fun SettingsScreen(
                     TextButton(onClick = { onCity(city) }) {
                         Text(if (city.isBlank()) "Remove city" else "Save city", style = DexTheme.type.labelLarge, color = colors.accent)
                     }
+                }
+            }
+            Section("Notifications") {
+                DexSwitchRow(
+                    title = "Daily reminder",
+                    body = "Each morning at 9:00, unless you've already guessed. It never gives the answer away.",
+                    checked = preferences.reminder,
+                    onChange = { on -> if (on) askForNotifications() else onReminder(false) },
+                )
+                if (notificationsBlocked) {
+                    Text(
+                        "Notifications are turned off for Pokedex. You can allow them in your phone's settings.",
+                        style = DexTheme.type.labelMedium,
+                        color = colors.accent,
+                    )
                 }
             }
             Section("Privacy") {
@@ -216,6 +240,6 @@ private fun Context.versionName(): String =
 @Composable
 private fun SettingsPreview() {
     DexTheme {
-        SettingsScreen(UserPreferences(), "0.1.0", onBack = {}, onTheme = {}, onUsageStats = {}, onCrashReports = {}, onCity = {}, readLicence = { "" })
+        SettingsScreen(UserPreferences(), "0.1.0", onBack = {}, onTheme = {}, onUsageStats = {}, onCrashReports = {}, onCity = {}, onReminder = {}, readLicence = { "" })
     }
 }

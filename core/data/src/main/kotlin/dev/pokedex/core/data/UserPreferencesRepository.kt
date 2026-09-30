@@ -19,6 +19,7 @@ interface UserPreferencesRepository {
     suspend fun setCrashReports(enabled: Boolean)
     suspend fun setCity(city: String?)
     suspend fun completeOnboarding()
+    suspend fun setReminder(enabled: Boolean)
 }
 
 @Singleton
@@ -33,6 +34,8 @@ class DataStoreUserPreferencesRepository @Inject constructor(
             crashReports = prefs[CRASH_REPORTS] ?: false,
             onboardingDone = prefs[ONBOARDING_DONE] ?: false,
             city = prefs[CITY],
+            reminder = prefs[REMINDER] ?: false,
+            reminderAsked = prefs[REMINDER_ASKED] ?: false,
         )
     }
 
@@ -59,11 +62,21 @@ class DataStoreUserPreferencesRepository @Inject constructor(
         store.edit { it[ONBOARDING_DONE] = true }
     }
 
+    /** Either answer counts as asked, so Today never offers the reminder twice. */
+    override suspend fun setReminder(enabled: Boolean) {
+        store.edit {
+            it[REMINDER] = enabled
+            it[REMINDER_ASKED] = true
+        }
+    }
+
     private companion object {
         val THEME = stringPreferencesKey("theme")
         val USAGE_STATS = booleanPreferencesKey("usage_stats")
         val CRASH_REPORTS = booleanPreferencesKey("crash_reports")
         val ONBOARDING_DONE = booleanPreferencesKey("onboarding_done")
         val CITY = stringPreferencesKey("city")
+        val REMINDER = booleanPreferencesKey("reminder")
+        val REMINDER_ASKED = booleanPreferencesKey("reminder_asked")
     }
 }

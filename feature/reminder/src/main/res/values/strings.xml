@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="reminder_channel_name">Daily reminder</string>
+    <string name="reminder_channel_description">A nudge each morning when a new Pokémon is waiting to be guessed.</string>
+    <string name="reminder_title">A new Pokémon is waiting</string>
+    <string name="reminder_text">Who\'s today\'s Pokémon? Take a guess.</string>
+</resources>

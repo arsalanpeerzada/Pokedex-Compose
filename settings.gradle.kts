@@ -31,4 +31,5 @@ include(
     ":feature:onboarding",
     ":feature:teams",
     ":feature:widget",
+    ":feature:reminder",
 )
