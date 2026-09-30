@@ -19,10 +19,13 @@ Application ID: `io.github.arsalanpeerzada.pokedex`.
 | `:core:database` | Room database: the cached Pokédex and the user's caught, seen and favourite state |
 | `:core:data` | Offline-first repository, plus sample data for previews |
 | `:core:designsystem` | Colours, fonts, shapes, icons, motion and components from the Figma foundations |
-| `:feature:today`, `:feature:pokedex`, `:feature:detail`, `:feature:collection` | One screen and ViewModel each, with light and dark previews |
+| `:feature:today`, `:feature:pokedex`, `:feature:detail`, `:feature:collection`, `:feature:settings` | Screens and ViewModels, with light and dark previews |
 
 ## Data
-The app is offline-first, following PokeAPI's fair-use policy. The species index is one request, made once. Types and facts for each Pokémon are fetched the first time it is shown (at most four at a time) and kept in Room for good.
+The app is offline-first, following PokeAPI's fair-use policy. The species index is one request and the type index 18 more, each made once. Stats and facts for each Pokémon, and each evolution chain, are fetched the first time they're needed (at most four requests at a time) and kept in Room for good.
+
+## Checks
+CI (GitHub Actions) runs `gradlew assembleDebug testDebugUnitTest lintDebug` on every push to `main` and `day-*` branches, and on pull requests.
 
 ## Build
 Open the folder in Android Studio, or run `gradlew :app:assembleDebug`.

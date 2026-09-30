@@ -280,7 +280,22 @@ Two-week sprints, each ending with a Substack issue.
   - Motion: shared-element artwork between screens, staggered entrances, press feedback, an animated navigation bar, and the Today shake and reveal.
 - Pulled forward from Sprint 2: cries and card-to-detail transitions.
 - Pulled forward from Sprint 3: a basic guess and reveal, with the pick seeded by date only and no weather yet.
-- Still to do in Sprint 1: CI and Crashlytics.
+- Still to do in Sprint 1: Crashlytics (needs the Firebase project on the personal Gmail account).
+
+**Day 2 (30 September 2026), branch `day-2`.**
+- Done:
+  - CI on GitHub Actions: build, unit tests and lint.
+  - 24 unit tests, covering the model, the mappers, the offline-first repository, the Pokédex filters and Today's saved progress.
+  - A type index (18 requests) that gives every Pokémon its types, plus the type chart.
+  - Room v2 with an auto-migration.
+- Sprint 2 work done early:
+  - Search, type and generation filters, and sort.
+  - The type chart screen.
+  - Detail tabs for Stats, Matchups and Evolution.
+- Also done:
+  - Today saves its progress per date and keeps a real streak.
+  - A Settings screen: theme, privacy choices (both off) and About with the font licences.
+- Open question: alternate forms, because many are named after regions (for example "raichu-alola"), which the no-regions rule excludes. The Forms tab stays "coming soon" until this is decided.
 
 ## 9. Distribution
 
