@@ -10,4 +10,7 @@ data class UserPreferences(
     val theme: ThemeMode = ThemeMode.System,
     val usageStats: Boolean = false,
     val crashReports: Boolean = false,
+    val onboardingDone: Boolean = false,
+    /** Typed by the user, for Today's weather once the context engine lands. Never sent anywhere yet. */
+    val city: String? = null,
 )

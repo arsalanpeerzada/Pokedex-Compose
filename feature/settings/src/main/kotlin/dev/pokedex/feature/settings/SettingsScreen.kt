@@ -13,11 +13,8 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -32,6 +29,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
@@ -41,6 +39,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.pokedex.core.data.UserPreferencesRepository
 import dev.pokedex.core.designsystem.component.DexIconButton
 import dev.pokedex.core.designsystem.component.DexPreviews
+import dev.pokedex.core.designsystem.component.DexSwitchRow
+import dev.pokedex.core.designsystem.component.DexTextField
 import dev.pokedex.core.designsystem.component.DexTopBar
 import dev.pokedex.core.designsystem.component.FilterPill
 import dev.pokedex.core.designsystem.component.GlassCard
@@ -62,6 +62,7 @@ class SettingsViewModel @Inject constructor(private val repository: UserPreferen
     fun setTheme(theme: ThemeMode) = viewModelScope.launch { repository.setTheme(theme) }
     fun setUsageStats(enabled: Boolean) = viewModelScope.launch { repository.setUsageStats(enabled) }
     fun setCrashReports(enabled: Boolean) = viewModelScope.launch { repository.setCrashReports(enabled) }
+    fun setCity(city: String) = viewModelScope.launch { repository.setCity(city) }
 }
 
 @Composable
@@ -75,6 +76,7 @@ fun SettingsRoute(onBack: () -> Unit, viewModel: SettingsViewModel = hiltViewMod
         onTheme = { viewModel.setTheme(it) },
         onUsageStats = { viewModel.setUsageStats(it) },
         onCrashReports = { viewModel.setCrashReports(it) },
+        onCity = { viewModel.setCity(it) },
         readLicence = { name -> context.assets.open("licenses/$name").bufferedReader().use { it.readText() } },
     )
 }
@@ -89,11 +91,14 @@ fun SettingsScreen(
     onTheme: (ThemeMode) -> Unit,
     onUsageStats: (Boolean) -> Unit,
     onCrashReports: (Boolean) -> Unit,
+    onCity: (String) -> Unit,
     readLicence: (String) -> String,
     modifier: Modifier = Modifier,
 ) {
     val colors = DexTheme.colors
     var licence by rememberSaveable { mutableStateOf<String?>(null) }
+    var city by rememberSaveable(preferences.city) { mutableStateOf(preferences.city.orEmpty()) }
+    val cityChanged = city.trim() != preferences.city.orEmpty()
 
     Column(modifier.fillMaxSize().background(colors.background)) {
         DexTopBar(title = "Settings", navigation = { DexIconButton(DexIcons.Back, "Back", onBack) })
@@ -112,14 +117,35 @@ fun SettingsScreen(
                     }
                 }
             }
+            Section("Today") {
+                Text("Your city", style = DexTheme.type.titleMedium, color = colors.text)
+                Text(
+                    "Soon, Today will pick a Pokémon to suit your local weather. Your city stays on this phone.",
+                    style = DexTheme.type.bodyMedium,
+                    color = colors.textSecondary,
+                )
+                DexTextField(
+                    value = city,
+                    onValueChange = { city = it },
+                    placeholder = "City, for example Leeds",
+                    icon = DexIcons.Pin,
+                    capitalization = KeyboardCapitalization.Words,
+                    onImeAction = { if (cityChanged) onCity(city) },
+                )
+                if (cityChanged) {
+                    TextButton(onClick = { onCity(city) }) {
+                        Text(if (city.isBlank()) "Remove city" else "Save city", style = DexTheme.type.labelLarge, color = colors.accent)
+                    }
+                }
+            }
             Section("Privacy") {
-                SwitchRow(
+                DexSwitchRow(
                     title = "Share usage statistics",
                     body = "Anonymous counts of which screens are used. Never your location.",
                     checked = preferences.usageStats,
                     onChange = onUsageStats,
                 )
-                SwitchRow(
+                DexSwitchRow(
                     title = "Send crash reports",
                     body = "Helps fix crashes. Off unless you turn it on.",
                     checked = preferences.crashReports,
@@ -183,35 +209,6 @@ private fun Section(title: String, content: @Composable () -> Unit) {
     }
 }
 
-@Composable
-private fun SwitchRow(title: String, body: String, checked: Boolean, onChange: (Boolean) -> Unit) {
-    val colors = DexTheme.colors
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .toggleable(value = checked, onValueChange = onChange, role = Role.Switch),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(title, style = DexTheme.type.titleMedium, color = colors.text)
-            Text(body, style = DexTheme.type.bodyMedium, color = colors.textSecondary)
-        }
-        // The row handles the toggle, so the switch itself isn't a second focus stop.
-        Switch(
-            checked = checked,
-            onCheckedChange = null,
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = colors.onPrimary,
-                checkedTrackColor = colors.primary,
-                uncheckedThumbColor = colors.textSecondary,
-                uncheckedTrackColor = colors.track,
-                uncheckedBorderColor = colors.outline,
-            ),
-        )
-    }
-}
-
 private fun Context.versionName(): String =
     runCatching { packageManager.getPackageInfo(packageName, 0).versionName }.getOrNull().orEmpty()
 
@@ -219,6 +216,6 @@ private fun Context.versionName(): String =
 @Composable
 private fun SettingsPreview() {
     DexTheme {
-        SettingsScreen(UserPreferences(), "0.1.0", onBack = {}, onTheme = {}, onUsageStats = {}, onCrashReports = {}, readLicence = { "" })
+        SettingsScreen(UserPreferences(), "0.1.0", onBack = {}, onTheme = {}, onUsageStats = {}, onCrashReports = {}, onCity = {}, readLicence = { "" })
     }
 }

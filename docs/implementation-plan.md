@@ -256,6 +256,7 @@ Progress:
   - **Variable collections:** Colour / Light (19), Colour / Dark (19), Types (36) and Spacing and shape (13). Each variable has its scope set and an Android name for the Compose theme.
   - **Text styles:** 11 Adventure styles, from Display/Large down to Number/Small.
   - **Effect styles:** Glass/Background blur and Elevation/Card.
+- **30 September 2026, change of approach:** the remaining screens are designed directly in Compose, not in Figma. The foundations above are already in the code design system (`:core:designsystem`). Each new screen has light and dark `@DexPreviews`, and those previews are the design reference. The Figma file stays as the record of the foundations and the first sample screens. This also avoids Starter's 20 calls a month.
 
 ## 8. Build sprints (after design sign-off)
 
