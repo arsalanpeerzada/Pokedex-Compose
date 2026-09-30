@@ -2,6 +2,9 @@ package dev.pokedex.feature.detail
 
 import android.content.Intent
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
@@ -40,6 +43,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -50,7 +54,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -74,7 +81,9 @@ import dev.pokedex.core.designsystem.theme.detailPalette
 import dev.pokedex.core.model.EvolutionStep
 import dev.pokedex.core.model.Pokemon
 import dev.pokedex.core.model.PokemonType
+import dev.pokedex.core.model.Team
 import dev.pokedex.core.model.TypeChart
+import kotlinx.coroutines.delay
 
 private val Tabs = listOf("About", "Stats", "Evolution", "Matchups", "Forms")
 
@@ -89,28 +98,38 @@ fun PokemonDetailRoute(pokemonId: Int, onBack: () -> Unit, onOpenPokemon: (Int) 
     val pokemon = state.pokemon ?: Pokemon(pokemonId, name = "", types = emptyList(), hasDetails = false)
     val context = LocalContext.current
     val cry = rememberCryPlayer()
-    PokemonDetailScreen(
-        pokemon = pokemon,
-        caught = state.user.caught,
-        favourite = state.user.favourite,
-        cryPlaying = cry.playing,
-        chart = state.chart,
-        evolution = state.evolution,
-        onBack = onBack,
-        onOpenPokemon = onOpenPokemon,
-        onToggleCaught = viewModel::toggleCaught,
-        onFavourite = viewModel::toggleFavourite,
-        onShare = {
-            val text = buildString {
-                append(pokemon.name).append(", #").append(pokemon.number)
-                pokemon.category?.let { append(", the ").append(it) }
-                append('.')
-            }
-            val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
-            context.startActivity(Intent.createChooser(send, null))
-        },
-        onPlayCry = { pokemon.cryUrl?.let(cry::play) },
-    )
+    Box(Modifier.fillMaxSize()) {
+        PokemonDetailScreen(
+            pokemon = pokemon,
+            caught = state.user.caught,
+            favourite = state.user.favourite,
+            cryPlaying = cry.playing,
+            chart = state.chart,
+            evolution = state.evolution,
+            teams = state.teams,
+            onAddToTeam = viewModel::addToTeam,
+            onAddToNewTeam = viewModel::addToNewTeam,
+            onBack = onBack,
+            onOpenPokemon = onOpenPokemon,
+            onToggleCaught = viewModel::toggleCaught,
+            onFavourite = viewModel::toggleFavourite,
+            onShare = {
+                val text = buildString {
+                    append(pokemon.name).append(", #").append(pokemon.number)
+                    pokemon.category?.let { append(", the ").append(it) }
+                    append('.')
+                }
+                val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
+                context.startActivity(Intent.createChooser(send, null))
+            },
+            onPlayCry = { pokemon.cryUrl?.let(cry::play) },
+        )
+        MessagePill(
+            state.message,
+            onShown = viewModel::messageShown,
+            modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 16.dp),
+        )
+    }
 }
 
 /** One detail layout, shared by the Pokédex, the collection and Today. Colours come from the Pokémon itself. */
@@ -122,6 +141,9 @@ fun PokemonDetailScreen(
     cryPlaying: Boolean,
     chart: TypeChart,
     evolution: List<EvolutionStep>,
+    teams: List<Team>,
+    onAddToTeam: (Team) -> Unit,
+    onAddToNewTeam: () -> Unit,
     onBack: () -> Unit,
     onOpenPokemon: (Int) -> Unit,
     onToggleCaught: () -> Unit,
@@ -138,6 +160,17 @@ fun PokemonDetailScreen(
     val content by animateColorAsState(palette.content, tween(600), label = "detailContent")
     val secondary by animateColorAsState(palette.contentSecondary, tween(600), label = "detailSecondary")
     var tab by rememberSaveable { mutableIntStateOf(0) }
+    var choosingTeam by rememberSaveable { mutableStateOf(false) }
+
+    if (choosingTeam) {
+        TeamChooser(
+            pokemon = pokemon,
+            teams = teams,
+            onChoose = { onAddToTeam(it); choosingTeam = false },
+            onNewTeam = { onAddToNewTeam(); choosingTeam = false },
+            onDismiss = { choosingTeam = false },
+        )
+    }
 
     Column(modifier.fillMaxSize().background(Brush.verticalGradient(listOf(top, bottom)))) {
         DexTopBar(
@@ -172,17 +205,20 @@ fun PokemonDetailScreen(
                 }
             }
             StaggeredEntrance(2) {
-                AnimatedContent(
-                    targetState = caught,
-                    transitionSpec = { (fadeIn(tween(220)) + scaleIn(initialScale = 0.9f)) togetherWith fadeOut(tween(120)) },
-                    label = "caughtButton",
-                    modifier = Modifier.fillMaxWidth(),
-                ) { isCaught ->
-                    if (isCaught) {
-                        DexGlassButton("Caught", onToggleCaught, icon = DexIcons.Check, contentColor = content, modifier = Modifier.fillMaxWidth())
-                    } else {
-                        DexPrimaryButton("Mark as caught", onToggleCaught, icon = DexIcons.Plus, modifier = Modifier.fillMaxWidth())
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    AnimatedContent(
+                        targetState = caught,
+                        transitionSpec = { (fadeIn(tween(220)) + scaleIn(initialScale = 0.9f)) togetherWith fadeOut(tween(120)) },
+                        label = "caughtButton",
+                        modifier = Modifier.weight(1f),
+                    ) { isCaught ->
+                        if (isCaught) {
+                            DexGlassButton("Caught", onToggleCaught, icon = DexIcons.Check, contentColor = content, modifier = Modifier.fillMaxWidth())
+                        } else {
+                            DexPrimaryButton("Mark as caught", onToggleCaught, icon = DexIcons.Plus, modifier = Modifier.fillMaxWidth())
+                        }
                     }
+                    DexGlassButton("Add to team", { choosingTeam = true }, icon = DexIcons.Team, contentColor = content, modifier = Modifier.weight(1f))
                 }
             }
             StaggeredEntrance(3) { TabRow(selected = tab, onSelect = { tab = it }, content = content, contentSecondary = secondary) }
@@ -203,6 +239,39 @@ fun PokemonDetailScreen(
             }
             StaggeredEntrance(5) { CryCard(pokemon, cryPlaying, onPlayCry, content, secondary) }
         }
+    }
+}
+
+/** A short confirmation that slides up from the bottom, then goes. Read out by screen readers. */
+@Composable
+private fun MessagePill(message: String?, onShown: () -> Unit, modifier: Modifier = Modifier) {
+    val colors = DexTheme.colors
+    LaunchedEffect(message) {
+        if (message != null) {
+            delay(2_500)
+            onShown()
+        }
+    }
+    // Keep the last text while the pill animates out (a plain holder, not state).
+    val last = remember { arrayOf("") }
+    if (message != null) last[0] = message
+    val shown = last[0]
+    AnimatedVisibility(
+        visible = message != null,
+        enter = slideInVertically { it } + fadeIn(),
+        exit = slideOutVertically { it } + fadeOut(),
+        modifier = modifier,
+    ) {
+        Text(
+            shown,
+            style = DexTheme.type.labelLarge,
+            color = colors.onPrimary,
+            modifier = Modifier
+                .clip(DexShape.full)
+                .background(colors.primary)
+                .padding(horizontal = 18.dp, vertical = 12.dp)
+                .semantics { liveRegion = LiveRegionMode.Polite },
+        )
     }
 }
 
@@ -360,7 +429,7 @@ private fun PokemonDetailScreenPreview() {
     DexTheme {
         PokemonDetailScreen(
             SampleData.pikachu, caught = false, favourite = true, cryPlaying = false,
-            chart = TypeChart.Empty, evolution = emptyList(),
+            chart = TypeChart.Empty, evolution = emptyList(), teams = emptyList(), onAddToTeam = {}, onAddToNewTeam = {},
             onBack = {}, onOpenPokemon = {}, onToggleCaught = {}, onFavourite = {}, onShare = {}, onPlayCry = {},
         )
     }

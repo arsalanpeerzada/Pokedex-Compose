@@ -7,11 +7,14 @@ import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.pokedex.core.data.PokemonRepository
+import dev.pokedex.core.data.TeamRepository
 import dev.pokedex.core.model.EvolutionStep
 import dev.pokedex.core.model.Pokemon
+import dev.pokedex.core.model.Team
 import dev.pokedex.core.model.TypeChart
 import dev.pokedex.core.model.UserState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -30,6 +33,9 @@ data class DetailUiState(
     val user: UserState = UserState(),
     val chart: TypeChart = TypeChart.Empty,
     val evolution: List<EvolutionStep> = emptyList(),
+    val teams: List<Team> = emptyList(),
+    /** A short confirmation after adding to a team, shown once. */
+    val message: String? = null,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -37,17 +43,20 @@ data class DetailUiState(
 class DetailViewModel @AssistedInject constructor(
     @Assisted private val pokemonId: Int,
     private val repository: PokemonRepository,
+    private val teams: TeamRepository,
 ) : ViewModel() {
 
     private val pokemon = repository.pokemon(pokemonId)
     private val chainId = pokemon.map { it?.evolutionChainId }.distinctUntilChanged()
+    private val message = MutableStateFlow<String?>(null)
 
     val state: StateFlow<DetailUiState> = combine(
-        pokemon,
-        repository.userStates().map { it[pokemonId] ?: UserState() },
+        combine(pokemon, repository.userStates().map { it[pokemonId] ?: UserState() }, ::Pair),
         repository.typeChart(),
         chainId.flatMapLatest { id -> if (id == null) flowOf(emptyList()) else repository.evolution(id) },
-    ) { p, user, chart, evolution -> DetailUiState(p, user, chart, evolution) }
+        teams.teams(),
+        message,
+    ) { (p, user), chart, evolution, teamList, msg -> DetailUiState(p, user, chart, evolution, teamList, msg) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DetailUiState())
 
     init {
@@ -65,6 +74,31 @@ class DetailViewModel @AssistedInject constructor(
 
     fun toggleFavourite() {
         viewModelScope.launch { repository.toggleFavourite(pokemonId) }
+    }
+
+    /** Adds this Pokémon to the team's first empty slot. */
+    fun addToTeam(team: Team) {
+        val slot = team.members.indexOfFirst { it == null }
+        val name = state.value.pokemon?.name ?: return
+        if (slot < 0) return
+        viewModelScope.launch {
+            teams.setMember(team.id, slot, pokemonId)
+            message.value = "$name added to ${team.name}"
+        }
+    }
+
+    fun addToNewTeam() {
+        val name = state.value.pokemon?.name ?: return
+        viewModelScope.launch {
+            val teamName = "Team ${state.value.teams.size + 1}"
+            val id = teams.create(teamName)
+            teams.setMember(id, 0, pokemonId)
+            message.value = "$name added to $teamName"
+        }
+    }
+
+    fun messageShown() {
+        message.value = null
     }
 
     @AssistedFactory
