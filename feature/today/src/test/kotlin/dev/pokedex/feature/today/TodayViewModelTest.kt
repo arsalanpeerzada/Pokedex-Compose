@@ -2,11 +2,17 @@ package dev.pokedex.feature.today
 
 import dev.pokedex.core.data.DailyRepository
 import dev.pokedex.core.data.PokemonRepository
+import dev.pokedex.core.data.UserPreferencesRepository
+import dev.pokedex.core.domain.TodayPick
+import dev.pokedex.core.domain.TodayPicker
 import dev.pokedex.core.model.DailyResult
 import dev.pokedex.core.model.EvolutionStep
 import dev.pokedex.core.model.Pokemon
+import dev.pokedex.core.model.ThemeMode
 import dev.pokedex.core.model.TypeChart
+import dev.pokedex.core.model.UserPreferences
 import dev.pokedex.core.model.UserState
+import dev.pokedex.core.model.WeatherScene
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -35,32 +41,48 @@ class TodayViewModelTest {
     private val pokemon = (1..40).map { Pokemon(it, "Pokemon $it", emptyList(), hasDetails = false) }
     private val repository = FakePokemonRepository(pokemon)
     private val daily = FakeDailyRepository()
+    private val preferences = FakePreferences()
+    private val day = LocalDate.now().toEpochDay()
+
+    /** Stands in for the context engine: always the same answer, like a saved pick. */
+    private val picker = TodayPicker {
+        TodayPick(
+            epochDay = day,
+            answer = pokemon[6],
+            choices = listOf(pokemon[2], pokemon[6], pokemon[11], pokemon[20]),
+            reason = "Rain in Leeds today: Water weather.",
+            hint = "Rainy in Leeds today.",
+            weather = null,
+            city = "Leeds",
+            scene = WeatherScene.Rain,
+            isNight = false,
+        )
+    }
 
     @Before fun setUp() = Dispatchers.setMain(dispatcher)
     @After fun tearDown() = Dispatchers.resetMain()
 
     private fun TestScope.newViewModel(): TodayViewModel {
-        val vm = TodayViewModel(repository, daily)
+        val vm = TodayViewModel(repository, daily, preferences, picker)
         backgroundScope.launch(dispatcher) { vm.state.collect {} }
         advanceUntilIdle()
         return vm
     }
 
     @Test
-    fun `the pick is the same for a date and has four distinct choices`() {
-        val date = LocalDate.of(2026, 9, 30)
-        val first = TodayViewModel.dailyPick(pokemon, date)
-        assertEquals(first, TodayViewModel.dailyPick(pokemon, date))
-        assertEquals(4, first.second.map { it.id }.toSet().size)
-        assertTrue(first.first in first.second)
+    fun `shows the pick with its weather hint and scene`() = runTest(dispatcher) {
+        val state = newViewModel().state.value
+        assertEquals(pokemon[6], state.answer)
+        assertEquals("Rainy in Leeds today.", state.weatherHint)
+        assertEquals(WeatherScene.Rain, state.scene)
+        assertFalse(state.revealed)
     }
 
     @Test
     fun `progress survives a new ViewModel and a right guess catches it`() = runTest(dispatcher) {
         val vm = newViewModel()
-        val state = vm.state.value
-        val answer = state.answer!!
-        val wrong = state.choices.first { it.id != answer.id }
+        val answer = vm.state.value.answer!!
+        val wrong = vm.state.value.choices.first { it.id != answer.id }
 
         vm.guess(wrong)
         vm.useHint()
@@ -71,13 +93,25 @@ class TodayViewModelTest {
         val reopened = newViewModel()
         assertEquals(setOf(wrong.id), reopened.state.value.wrongGuesses)
         assertEquals(1, reopened.state.value.hintsLeft)
-        assertFalse(reopened.state.value.revealed)
 
         reopened.guess(answer)
         advanceUntilIdle()
         assertTrue(reopened.state.value.revealed)
         assertEquals(1, reopened.state.value.streakDays)
+        assertEquals("Rain in Leeds today: Water weather.", reopened.state.value.reason)
         assertEquals(listOf(answer.id), repository.caught)
+    }
+
+    @Test
+    fun `the reminder is offered once, after the reveal`() = runTest(dispatcher) {
+        val vm = newViewModel()
+        assertFalse(vm.state.value.offerReminder)
+        vm.guess(vm.state.value.answer!!)
+        advanceUntilIdle()
+        assertTrue(vm.state.value.offerReminder)
+        vm.answerReminder(false)
+        advanceUntilIdle()
+        assertFalse(vm.state.value.offerReminder)
     }
 
     @Test
@@ -111,13 +145,29 @@ private class FakePokemonRepository(pokemon: List<Pokemon>) : PokemonRepository 
 private class FakeDailyRepository : DailyRepository {
     private val results = MutableStateFlow<Map<Long, DailyResult>>(emptyMap())
     override fun result(epochDay: Long): Flow<DailyResult?> = results.map { it[epochDay] }
+    override suspend fun get(epochDay: Long): DailyResult? = results.value[epochDay]
     override suspend fun save(result: DailyResult) {
         results.value = results.value + (result.epochDay to result)
     }
+    override suspend fun recentPokemonIds(epochDay: Long, days: Int): Set<Int> = emptySet()
     override fun streak(todayEpochDay: Long): Flow<Int> = results.map { map ->
         var day = todayEpochDay
         var streak = 0
         while (map[day]?.solved == true) { streak++; day-- }
         streak
+    }
+}
+
+private class FakePreferences : UserPreferencesRepository {
+    private val state = MutableStateFlow(UserPreferences())
+    override val preferences: Flow<UserPreferences> = state
+    override suspend fun setTheme(theme: ThemeMode) { state.value = state.value.copy(theme = theme) }
+    override suspend fun setUsageStats(enabled: Boolean) { state.value = state.value.copy(usageStats = enabled) }
+    override suspend fun setCrashReports(enabled: Boolean) { state.value = state.value.copy(crashReports = enabled) }
+    override suspend fun setCity(city: String?) { state.value = state.value.copy(city = city) }
+    override suspend fun completeOnboarding() { state.value = state.value.copy(onboardingDone = true) }
+    override suspend fun setReminder(enabled: Boolean) { state.value = state.value.copy(reminder = enabled, reminderAsked = true) }
+    override suspend fun setCityLocation(city: String, latitude: Double, longitude: Double) {
+        state.value = state.value.copy(cityLatitude = latitude, cityLongitude = longitude)
     }
 }

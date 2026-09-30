@@ -35,7 +35,11 @@ interface PokemonRepository {
 /** Today's guessing game: one result per local date, and the streak built from them. */
 interface DailyRepository {
     fun result(epochDay: Long): Flow<DailyResult?>
+    suspend fun get(epochDay: Long): DailyResult?
     suspend fun save(result: DailyResult)
+
+    /** Pokémon picked in the [days] before [epochDay], so the engine can avoid repeats. */
+    suspend fun recentPokemonIds(epochDay: Long, days: Int): Set<Int>
 
     /** Consecutive solved days ending today, or yesterday if today isn't solved yet. */
     fun streak(todayEpochDay: Long): Flow<Int>

@@ -129,7 +129,7 @@ fun SettingsScreen(
             Section("Today") {
                 Text("Your city", style = DexTheme.type.titleMedium, color = colors.text)
                 Text(
-                    "Soon, Today will pick a Pokémon to suit your local weather. Your city stays on this phone.",
+                    "Today picks a Pokémon to suit your local weather. Only your city's rough position (about 1 km) is sent to the weather service.",
                     style = DexTheme.type.bodyMedium,
                     color = colors.textSecondary,
                 )

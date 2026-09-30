@@ -13,6 +13,9 @@ data class UserPreferences(
     val onboardingDone: Boolean = false,
     /** Typed by the user. Used to look up the weather for Today. */
     val city: String? = null,
+    /** The city's position, rounded to two decimal places (about 1 km). Null until looked up. */
+    val cityLatitude: Double? = null,
+    val cityLongitude: Double? = null,
     val reminder: Boolean = false,
     /** Whether Today has already offered the reminder, so it asks once. */
     val reminderAsked: Boolean = false,

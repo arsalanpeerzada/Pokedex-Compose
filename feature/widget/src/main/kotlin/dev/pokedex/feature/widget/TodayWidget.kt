@@ -49,16 +49,14 @@ import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
-import dev.pokedex.core.data.DailyPicker
 import dev.pokedex.core.data.DailyRepository
-import dev.pokedex.core.data.PokemonRepository
+import dev.pokedex.core.domain.TodayPicker
 import kotlinx.coroutines.flow.first
-import java.time.LocalDate
 
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 internal interface WidgetEntryPoint {
-    fun pokemon(): PokemonRepository
+    fun picker(): TodayPicker
     fun daily(): DailyRepository
 }
 
@@ -101,11 +99,10 @@ class TodayWidget : GlanceAppWidget() {
 
     private suspend fun loadState(context: Context): WidgetState {
         val entry = EntryPointAccessors.fromApplication(context.applicationContext, WidgetEntryPoint::class.java)
-        val pokedex = entry.pokemon().pokedex().first()
-        if (pokedex.isEmpty()) return WidgetState.NoData
-        val today = LocalDate.now()
-        val (answer, _) = DailyPicker.pick(pokedex, today)
-        val solved = entry.daily().result(today.toEpochDay()).first()?.solved == true
+        // The same saved pick as Today, so the widget and the app always agree.
+        val pick = entry.picker()() ?: return WidgetState.NoData
+        val answer = pick.answer
+        val solved = entry.daily().result(pick.epochDay).first()?.solved == true
         val artwork = loadBitmap(context, answer.artworkUrl)
         return if (solved) {
             WidgetState.Revealed(answer.name, answer.number, artwork)

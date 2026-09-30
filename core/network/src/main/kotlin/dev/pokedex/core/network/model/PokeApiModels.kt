@@ -86,6 +86,7 @@ data class SpeciesDto(
     @SerialName("flavor_text_entries") val flavorTextEntries: List<FlavorText> = emptyList(),
     @SerialName("evolution_chain") val evolutionChain: UrlResource? = null,
     val varieties: List<Variety> = emptyList(),
+    val habitat: NamedResource? = null,
 )
 
 /** One form of a species; the default is the species itself. */

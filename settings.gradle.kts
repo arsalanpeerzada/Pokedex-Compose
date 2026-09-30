@@ -23,6 +23,8 @@ include(
     ":core:database",
     ":core:data",
     ":core:designsystem",
+    ":core:weather",
+    ":core:domain",
     ":feature:today",
     ":feature:pokedex",
     ":feature:detail",

@@ -208,7 +208,7 @@ private fun CityPage(city: String, onCityChange: (String) -> Unit, onDone: () ->
     val colors = DexTheme.colors
     Text("Where are you?", style = DexTheme.type.headlineMedium, color = colors.text, modifier = Modifier.semantics { heading() })
     Text(
-        "Soon, Today will pick a Pokémon to suit your weather: rain brings Water types, storms bring Electric. " +
+        "Today picks a Pokémon to suit your weather: rain brings Water types, storms bring Electric. " +
             "Add your city now, or later in Settings.",
         style = DexTheme.type.bodyLarge,
         color = colors.text,
@@ -222,7 +222,12 @@ private fun CityPage(city: String, onCityChange: (String) -> Unit, onDone: () ->
         capitalization = KeyboardCapitalization.Words,
         onImeAction = onDone,
     )
-    Text("Your city stays on this phone.", style = DexTheme.type.labelMedium, color = colors.textSecondary)
+    Text(
+        "Only your city's rough position (about 1 km) is sent to the weather service. Nothing else is shared.",
+        style = DexTheme.type.labelMedium,
+        color = colors.textSecondary,
+        textAlign = TextAlign.Center,
+    )
 }
 
 @Composable

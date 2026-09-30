@@ -53,11 +53,20 @@ data class PokemonForm(val id: Int, val label: String) {
         get() = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/$id.png"
 }
 
-/** The user's result for one day's Pokémon, keyed by the local date. */
+data class StoryEntry(val game: String, val text: String)
+
+/**
+ * The day's Pokémon and the user's progress, keyed by the local date. The pick is saved the first
+ * time it's made, so Today, the widget and the reminder agree all day, whatever the weather does.
+ */
 data class DailyResult(
     val epochDay: Long,
     val pokemonId: Int,
     val solved: Boolean,
     val wrongGuesses: Set<Int>,
     val hintsUsed: Int,
+    /** "Why today?", shown after the reveal. */
+    val reason: String? = null,
+    /** A weather-only hint shown before the reveal; it never names a type. */
+    val hint: String? = null,
 )

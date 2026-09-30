@@ -159,7 +159,10 @@ Deliberately not used: kapt, LiveData, XML layouts, RxJava, Paging 3 (the full i
 
 **Terms that shape the design:**
 - **Attribution:** Google's weather attribution must be visible wherever weather data appears, so the designs reserve space for it (exact wording and styling from the Weather API policies page).
-- **Caching:** weather content may only be cached temporarily. The exact period is in Google's service-specific terms, which I couldn't read on 29 September 2026. Confirm it before building offline weather.
+- **Caching:** weather content may only be cached temporarily. The exact period is in Google's service-specific terms, which I still couldn't read on 30 September 2026 (the page came back truncated). Until it's confirmed, the app keeps readings in memory only, for at most three hours, and never on disk.
+- **Attribution as built (30 September 2026):**
+  - Google: "Source: Includes weather data from Google", shown next to the weather on Today.
+  - Open-Meteo: "Weather data by Open-Meteo.com", with a link. Open-Meteo is the fallback when no Google key is set, and is licensed CC BY 4.0.
 - **Primary purpose:** the terms bar apps whose primary purpose is providing weather information. Ours is a Pokédex that uses weather as an input, so that's fine.
 
 ## 7. Design in Figma (Sprint 0, before any code)
@@ -301,6 +304,20 @@ Two-week sprints, each ending with a Substack issue.
   - Team Builder: teams of six, a Pokémon picker, rename and delete, and a type check covering shared weaknesses and attack coverage. Room v3 adds the team tables.
   - Home-screen widget (Glance): a silhouette until you guess, then the artwork and name. It refreshes when you solve Today, and hourly.
   - With this, every v1 screen exists in code. What's left is Sprint 3's context engine and weather, the daily notification, and hardening.
+- Sprint 3 core, also on 30 September 2026:
+  - **`:core:domain`:** the context engine, with 12 table-driven tests.
+    - Signals: weather buckets per the table above, night, season (flipped south of the equator) and three special days.
+    - Picking: a weighted pick seeded by date and city, no repeats within 60 days, rare legendaries with weather moments, and "Why today?" plus a weather-only hint.
+    - All weights are a first draft.
+  - **`:core:weather`:** Google Weather when a key is in `secrets.properties`, otherwise Open-Meteo. The city is geocoded on the device and stored rounded to about 1 km.
+  - **The day's pick is saved,** so Today, the widget and the reminder agree all day.
+  - **Story after the reveal:** "Why today?", the first game, habitat, and up to three Pokédex entries from different games.
+  - Also: the daily reminder at 9:00 (off by default, offered once after the first reveal), and "Add to team" on Detail.
+  - Not done yet:
+    - Remote Config and opt-in Analytics, which need the Firebase project.
+    - National days, which need the country.
+    - Religious festivals, still an open decision.
+    - Places Autocomplete: the city is typed.
 - Forms follow the no-regions rule. A form whose name includes a region gets a neutral label, such as "Vulpix, alternate form". Other forms read naturally, for example "Mega Charizard X" or "Rotom (Heat)".
 
 ## 9. Distribution

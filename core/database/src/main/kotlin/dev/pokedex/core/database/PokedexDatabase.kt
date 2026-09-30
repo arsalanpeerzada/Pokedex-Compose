@@ -46,6 +46,10 @@ data class PokemonEntity(
     val evolutionChainId: Int? = null,
     /** Alternate forms as "id:label" pairs joined by "|"; empty when there are none, null until loaded. */
     val forms: String? = null,
+    val habitat: String? = null,
+    val firstGame: String? = null,
+    /** Story entries as "game\ttext" joined by a unit separator; null until loaded. */
+    val storyEntries: String? = null,
 )
 
 /** What the user has done: caught, seen, favourite. Kept apart so a data refresh never touches it. */
@@ -82,6 +86,8 @@ data class DailyResultEntity(
     /** Comma-separated species ids. */
     val wrongGuesses: String,
     val hintsUsed: Int,
+    val reason: String? = null,
+    val hint: String? = null,
 )
 
 @Entity(tableName = "team")
@@ -112,7 +118,7 @@ interface PokemonDao {
     suspend fun count(): Int
 
     /** Null if the species isn't in the index yet. Rows cached before stats existed count as needing details. */
-    @Query("SELECT (detailsLoaded = 0 OR hp IS NULL OR forms IS NULL) FROM pokemon WHERE id = :id")
+    @Query("SELECT (detailsLoaded = 0 OR hp IS NULL OR forms IS NULL OR storyEntries IS NULL) FROM pokemon WHERE id = :id")
     suspend fun needsDetails(id: Int): Boolean?
 
     @Query("SELECT COUNT(*) FROM pokemon WHERE types = ''")
@@ -183,6 +189,9 @@ interface DailyResultDao {
     @Query("SELECT * FROM daily_result WHERE epochDay = :epochDay")
     suspend fun get(epochDay: Long): DailyResultEntity?
 
+    @Query("SELECT pokemonId FROM daily_result WHERE epochDay >= :sinceEpochDay AND epochDay < :beforeEpochDay")
+    suspend fun pokemonIdsBetween(sinceEpochDay: Long, beforeEpochDay: Long): List<Int>
+
     @Upsert
     suspend fun upsert(result: DailyResultEntity)
 }
@@ -228,9 +237,9 @@ interface TeamDao {
         TeamEntity::class,
         TeamMemberEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
-    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3)],
+    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4)],
 )
 abstract class PokedexDatabase : RoomDatabase() {
     abstract fun pokemonDao(): PokemonDao

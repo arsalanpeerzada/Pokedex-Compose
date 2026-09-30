@@ -125,6 +125,9 @@ class OfflineFirstPokemonRepository @Inject constructor(
                         speed = stats["speed"],
                         evolutionChainId = s.evolutionChain?.id,
                         forms = s.alternateForms(name).encode(),
+                        habitat = s.habitat?.let { displayName(it.name) },
+                        firstGame = s.firstGame(),
+                        storyEntries = s.storyEntries().encodeEntries(),
                     ),
                 )
             }
@@ -197,6 +200,9 @@ private fun PokemonEntity.toModel() = Pokemon(
     stats = baseStats(),
     evolutionChainId = evolutionChainId,
     forms = decodeForms(forms),
+    habitat = habitat,
+    firstGame = firstGame,
+    storyEntries = decodeEntries(storyEntries),
     hasDetails = detailsLoaded,
 )
 

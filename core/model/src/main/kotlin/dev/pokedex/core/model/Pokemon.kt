@@ -43,6 +43,12 @@ data class Pokemon(
     val evolutionChainId: Int? = null,
     /** Alternate forms (not the default). Null until details load. */
     val forms: List<PokemonForm>? = null,
+    /** PokeAPI's habitat, for example "Forest". Only the first three generations have one. */
+    val habitat: String? = null,
+    /** The first game with an English Pokédex entry, for example "Red". */
+    val firstGame: String? = null,
+    /** Up to three English entries from different games, newest first. */
+    val storyEntries: List<StoryEntry>? = null,
     /** False until the lazy detail fetch has filled the facts. Types can arrive earlier, from the type index. */
     val hasDetails: Boolean = true,
 ) {

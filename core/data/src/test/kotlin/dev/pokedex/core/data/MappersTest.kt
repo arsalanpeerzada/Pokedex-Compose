@@ -4,6 +4,7 @@ import dev.pokedex.core.network.model.ChainLink
 import dev.pokedex.core.network.model.DamageRelations
 import dev.pokedex.core.network.model.EvolutionChainDto
 import dev.pokedex.core.network.model.EvolutionDetail
+import dev.pokedex.core.network.model.FlavorText
 import dev.pokedex.core.network.model.NamedResource
 import dev.pokedex.core.network.model.SpeciesDto
 import dev.pokedex.core.network.model.TypeDto
@@ -123,6 +124,28 @@ class MappersTest {
         assertEquals(forms, decodeForms(forms.encode()))
         assertEquals(emptyList<Any>(), decodeForms(""))
         assertNull(decodeForms(null))
+    }
+
+    @Test
+    fun `story takes the first game and up to three different newer entries`() {
+        fun entry(text: String, game: String, lang: String = "en") =
+            FlavorText(text, resource("language", lang), resource("version", game))
+        val species = SpeciesDto(
+            id = 1, name = "bulbasaur", captureRate = 45,
+            flavorTextEntries = listOf(
+                entry("Oldest\nentry.", "red"),
+                entry("Oldest entry.", "blue"),
+                entry("Ein Eintrag.", "x", lang = "de"),
+                entry("Middle entry.", "gold"),
+                entry("Newer entry.", "x"),
+                entry("Newest entry.", "scarlet"),
+            ),
+        )
+        assertEquals("Red", species.firstGame())
+        val story = species.storyEntries()
+        assertEquals(listOf("Scarlet", "X", "Gold"), story.map { it.game })
+        assertEquals("Newest entry.", story.first().text)
+        assertEquals(story, decodeEntries(story.encodeEntries()))
     }
 
     @Test

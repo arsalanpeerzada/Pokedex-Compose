@@ -17,9 +17,12 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -49,7 +52,9 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -66,6 +71,7 @@ import dev.pokedex.core.designsystem.component.PokemonArtwork
 import dev.pokedex.core.designsystem.component.PokemonSilhouette
 import dev.pokedex.core.designsystem.component.SceneCard
 import dev.pokedex.core.designsystem.component.SceneChip
+import dev.pokedex.core.designsystem.component.rememberNotificationPermission
 import dev.pokedex.core.designsystem.icon.DexIcons
 import dev.pokedex.core.designsystem.motion.StaggeredEntrance
 import dev.pokedex.core.designsystem.motion.rememberPulse
@@ -74,6 +80,8 @@ import dev.pokedex.core.designsystem.theme.DexTheme
 import dev.pokedex.core.designsystem.theme.SceneSilhouette
 import dev.pokedex.core.designsystem.theme.brush
 import dev.pokedex.core.model.Pokemon
+import dev.pokedex.core.model.StoryEntry
+import dev.pokedex.core.model.WeatherProvider
 import dev.pokedex.core.model.WeatherScene
 import kotlinx.coroutines.delay
 import java.time.Duration
@@ -88,6 +96,7 @@ fun TodayRoute(
     viewModel: TodayViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val askForNotifications = rememberNotificationPermission { granted -> viewModel.answerReminder(granted) }
     TodayScreen(
         state = state,
         onGuess = { viewModel.guess(it) },
@@ -95,6 +104,7 @@ fun TodayRoute(
         onRetry = viewModel::refresh,
         onOpenEntry = onOpenEntry,
         onSettings = onSettings,
+        onReminder = { yes -> if (yes) askForNotifications() else viewModel.answerReminder(false) },
         contentPadding = contentPadding,
     )
 }
@@ -108,6 +118,7 @@ fun TodayScreen(
     onRetry: () -> Unit,
     onOpenEntry: (Pokemon) -> Unit,
     onSettings: () -> Unit,
+    onReminder: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(),
 ) {
@@ -137,20 +148,20 @@ fun TodayScreen(
                     .padding(start = 16.dp, end = 16.dp, top = 6.dp, bottom = contentPadding.calculateBottomPadding() + 16.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                SceneChip(if (state.isNight) "Night" else "Day", if (state.isNight) DexIcons.Moon else DexIcons.Sun)
+                WeatherRow(state, onSettings)
                 val answer = state.answer
                 when {
                     state.failed -> OfflineCard(onRetry)
-                    answer == null -> MysteryCard(pokemon = null, revealed = false, wrongCount = 0)
+                    answer == null -> MysteryCard(pokemon = null, revealed = false, wrongCount = 0, hint = null)
                     else -> {
-                        MysteryCard(answer, state.revealed, state.wrongGuesses.size)
+                        MysteryCard(answer, state.revealed, state.wrongGuesses.size, state.weatherHint)
                         AnimatedContent(
                             targetState = state.revealed,
                             transitionSpec = { fadeIn(tween(300, delayMillis = 150)) togetherWith fadeOut(tween(150)) },
                             label = "todayActions",
                         ) { revealed ->
                             if (revealed) {
-                                Revealed(answer, state.streakDays, onOpenEntry)
+                                Revealed(answer, state, onOpenEntry, onReminder)
                             } else {
                                 Guessing(state, onGuess, onUseHint)
                             }
@@ -162,8 +173,44 @@ fun TodayScreen(
     }
 }
 
+/** Weather and time of day, with the provider's attribution in the same place (their terms ask for that). */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun MysteryCard(pokemon: Pokemon?, revealed: Boolean, wrongCount: Int) {
+private fun WeatherRow(state: TodayUiState, onSettings: () -> Unit) {
+    val colors = DexTheme.colors
+    val uriHandler = LocalUriHandler.current
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            state.weatherLine?.let { line ->
+                val clear = state.scene == WeatherScene.Clear || state.scene == WeatherScene.Heat
+                SceneChip(state.city?.let { "$line · $it" } ?: line, if (clear) DexIcons.Sun else DexIcons.Storm)
+            }
+            SceneChip(if (state.isNight) "Night" else "Day", if (state.isNight) DexIcons.Moon else DexIcons.Sun)
+        }
+        val provider = state.weatherProvider
+        when {
+            provider != null -> Text(
+                provider.attribution,
+                style = DexTheme.type.labelSmall,
+                color = colors.onSceneSecondary,
+                modifier = provider.link?.let { link ->
+                    Modifier.clickable(role = Role.Button, onClickLabel = "Open ${provider.attribution}") { uriHandler.openUri(link) }
+                } ?: Modifier,
+            )
+            state.city == null && !state.loading -> TextButton(onClick = onSettings) {
+                Text("Add your city to bring the weather in", style = DexTheme.type.labelLarge, color = colors.onScene)
+            }
+            state.city != null && !state.loading -> Text(
+                "No weather for ${state.city} right now, so the season and time of day chose.",
+                style = DexTheme.type.labelSmall,
+                color = colors.onSceneSecondary,
+            )
+        }
+    }
+}
+
+@Composable
+private fun MysteryCard(pokemon: Pokemon?, revealed: Boolean, wrongCount: Int, hint: String?) {
     val colors = DexTheme.colors
     // A wrong guess shakes the card.
     val shake = remember { Animatable(0f) }
@@ -212,7 +259,11 @@ private fun MysteryCard(pokemon: Pokemon?, revealed: Boolean, wrongCount: Int) {
             color = colors.onScene,
             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
         )
-        if (revealed) pokemon?.category?.let { Text(it, style = DexTheme.type.labelLarge, color = colors.onSceneSecondary) }
+        if (revealed) {
+            pokemon?.category?.let { Text(it, style = DexTheme.type.labelLarge, color = colors.onSceneSecondary) }
+        } else {
+            hint?.let { Text(it, style = DexTheme.type.labelLarge, color = colors.onSceneSecondary) }
+        }
     }
 }
 
@@ -254,8 +305,9 @@ private fun Guessing(state: TodayUiState, onGuess: (Pokemon) -> Unit, onUseHint:
 }
 
 @Composable
-private fun Revealed(answer: Pokemon, streakDays: Int, onOpenEntry: (Pokemon) -> Unit) {
+private fun Revealed(answer: Pokemon, state: TodayUiState, onOpenEntry: (Pokemon) -> Unit, onReminder: (Boolean) -> Unit) {
     val colors = DexTheme.colors
+    val streakDays = state.streakDays
     val remaining by produceState(untilMidnight()) {
         while (true) {
             delay(1_000)
@@ -264,6 +316,8 @@ private fun Revealed(answer: Pokemon, streakDays: Int, onOpenEntry: (Pokemon) ->
     }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Added to your collection.", style = DexTheme.type.bodyLarge, color = colors.onScene)
+        if (state.offerReminder) ReminderOffer(onReminder)
+        StoryCard(answer, state.reason)
         if (streakDays > 0) {
             Text(
                 if (streakDays == 1) "1-day streak. Come back tomorrow to keep it going." else "$streakDays-day streak.",
@@ -279,6 +333,56 @@ private fun Revealed(answer: Pokemon, streakDays: Int, onOpenEntry: (Pokemon) ->
             style = DexTheme.type.numberLarge,
             color = colors.onSceneSecondary,
         )
+    }
+}
+
+/** Offered once, right after the first reveal (plan, section 3). */
+@Composable
+private fun ReminderOffer(onAnswer: (Boolean) -> Unit) {
+    val colors = DexTheme.colors
+    SceneCard {
+        Text("Get a daily reminder?", style = DexTheme.type.titleMedium, color = colors.onScene)
+        Text(
+            "A nudge at 9:00 each morning when a new Pokémon is waiting. It never gives the answer away.",
+            style = DexTheme.type.bodyMedium,
+            color = colors.onSceneSecondary,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            DexPrimaryButton("Turn on", { onAnswer(true) })
+            TextButton(onClick = { onAnswer(false) }) { Text("Not now", style = DexTheme.type.labelLarge, color = colors.onScene) }
+        }
+    }
+}
+
+/** The story after the reveal: why today, where it began, and what the Pokédex says. */
+@Composable
+private fun StoryCard(pokemon: Pokemon, reason: String?) {
+    val colors = DexTheme.colors
+    SceneCard(spacing = 12.dp) {
+        reason?.let { StorySection("Why today?", it) }
+        val firstSeen = listOfNotNull(pokemon.generation.label, pokemon.firstGame?.let { "Pokémon $it" }).joinToString(", in ")
+        StorySection("First appeared", firstSeen)
+        pokemon.habitat?.let { StorySection("Habitat", it) }
+        val entries = pokemon.storyEntries
+        when {
+            entries == null -> StorySection("Its story", "Loading the Pokédex entries…")
+            entries.isNotEmpty() -> Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("Its story", style = DexTheme.type.titleMedium, color = colors.onScene, modifier = Modifier.semantics { heading() })
+                entries.forEach { entry ->
+                    Text(entry.text, style = DexTheme.type.bodyMedium, color = colors.onScene)
+                    Text("Pokémon ${entry.game}", style = DexTheme.type.labelSmall, color = colors.onSceneSecondary)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StorySection(title: String, body: String) {
+    val colors = DexTheme.colors
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(title, style = DexTheme.type.titleMedium, color = colors.onScene, modifier = Modifier.semantics { heading() })
+        Text(body, style = DexTheme.type.bodyMedium, color = colors.onScene)
     }
 }
 
@@ -371,11 +475,45 @@ private fun TodayScreenPreview() {
                 isNight = true,
                 answer = SampleData.today.answer,
                 choices = SampleData.today.choices,
+                city = "London",
+                weatherLine = "Thunderstorm · 17°C",
+                weatherProvider = WeatherProvider.OpenMeteo,
+                weatherHint = SampleData.today.weatherHint,
                 wrongGuesses = setOf(SampleData.gengar.id),
                 hints = listOf("It first appeared in Generation I."),
                 hintsLeft = 1,
             ),
-            onGuess = {}, onUseHint = {}, onRetry = {}, onOpenEntry = {}, onSettings = {},
+            onGuess = {}, onUseHint = {}, onRetry = {}, onOpenEntry = {}, onSettings = {}, onReminder = {},
+        )
+    }
+}
+
+@DexPreviews
+@Composable
+private fun TodayRevealedPreview() {
+    val pikachu = SampleData.pikachu.copy(
+        firstGame = "Red",
+        habitat = "Forest",
+        storyEntries = listOf(StoryEntry("Sample game", "Sample Pokédex entry text for the preview.")),
+    )
+    DexTheme {
+        TodayScreen(
+            state = TodayUiState(
+                loading = false,
+                dateLabel = SampleData.today.dateLabel,
+                scene = WeatherScene.Storm,
+                isNight = true,
+                city = "London",
+                weatherLine = "Thunderstorm · 17°C",
+                weatherProvider = WeatherProvider.Google,
+                answer = pikachu,
+                choices = SampleData.today.choices,
+                revealed = true,
+                streakDays = 3,
+                reason = "Thunderstorm in London tonight: Electric weather.",
+                offerReminder = true,
+            ),
+            onGuess = {}, onUseHint = {}, onRetry = {}, onOpenEntry = {}, onSettings = {}, onReminder = {},
         )
     }
 }

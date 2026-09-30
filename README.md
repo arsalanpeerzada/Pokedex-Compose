@@ -18,6 +18,8 @@ Application ID: `io.github.arsalanpeerzada.pokedex`.
 | `:core:network` | PokeAPI client (Ktor) |
 | `:core:database` | Room database: the cached Pokédex and the user's caught, seen and favourite state |
 | `:core:data` | Offline-first repository, plus sample data for previews |
+| `:core:weather` | Weather for the user's city: Google Weather with a key, Open-Meteo without |
+| `:core:domain` | The context engine that picks today's Pokémon, and the saved daily pick |
 | `:core:designsystem` | Colours, fonts, shapes, icons, motion and components from the Figma foundations |
 | `:feature:onboarding`, `:feature:today`, `:feature:pokedex`, `:feature:detail`, `:feature:collection`, `:feature:teams`, `:feature:settings` | Screens and ViewModels, with light and dark previews (the previews are the design reference) |
 | `:feature:widget` | Home-screen widget (Jetpack Glance): today's mystery Pokémon, revealed once guessed |
@@ -30,6 +32,10 @@ CI (GitHub Actions) runs `gradlew assembleDebug testDebugUnitTest lintDebug` on 
 
 ## Build
 Open the folder in Android Studio, or run `gradlew :app:assembleDebug`.
+
+Weather works without any setup, using Open-Meteo. To use Google Weather instead, copy `secrets.properties.example` to `secrets.properties` and add your key. Git ignores `secrets.properties`. In Google Cloud:
+- Restrict the key to the Weather API and to this app's package name and signing certificate.
+- Set a daily quota cap.
 
 ## Notices
 Unofficial fan project for learning. Pokémon and all related names are trademarks of their respective owners. Not affiliated with or endorsed by Nintendo, Game Freak or The Pokémon Company. Artwork is loaded from PokeAPI's sprite repository.

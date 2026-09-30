@@ -3,6 +3,7 @@ package dev.pokedex.core.data
 import dev.pokedex.core.database.EvolutionEntity
 import dev.pokedex.core.database.TypeEfficacyEntity
 import dev.pokedex.core.model.PokemonForm
+import dev.pokedex.core.model.StoryEntry
 import dev.pokedex.core.network.model.ChainLink
 import dev.pokedex.core.network.model.EvolutionChainDto
 import dev.pokedex.core.network.model.EvolutionDetail
@@ -19,8 +20,35 @@ internal fun displayName(apiName: String) =
 /** The newest English Pokédex entry, with line breaks from the games cleaned up. */
 internal fun SpeciesDto.latestEnglishEntry(): Pair<String, String>? =
     flavorTextEntries.lastOrNull { it.language.name == "en" }?.let { entry ->
-        entry.text.replace(Regex("[\\n\\u000c\\r]+"), " ").replace(Regex("\\s+"), " ").trim() to displayName(entry.version.name)
+        cleanEntry(entry.text) to displayName(entry.version.name)
     }
+
+private fun cleanEntry(text: String) = text.replace(Regex("[\\n\\u000c\\r]+"), " ").replace(Regex("\\s+"), " ").trim()
+
+/** The first game with an English entry. PokeAPI lists entries oldest first. */
+internal fun SpeciesDto.firstGame(): String? =
+    flavorTextEntries.firstOrNull { it.language.name == "en" }?.let { displayName(it.version.name) }
+
+/** Up to [limit] English entries, newest first, each from a different game and each saying something new. */
+internal fun SpeciesDto.storyEntries(limit: Int = 3): List<StoryEntry> {
+    val seenTexts = mutableSetOf<String>()
+    return flavorTextEntries.asReversed()
+        .filter { it.language.name == "en" }
+        .mapNotNull { entry ->
+            val text = cleanEntry(entry.text)
+            if (seenTexts.add(text.lowercase())) StoryEntry(displayName(entry.version.name), text) else null
+        }
+        .distinctBy { it.game }
+        .take(limit)
+}
+
+private const val ENTRY_SEPARATOR = '\u001f'
+
+internal fun List<StoryEntry>.encodeEntries(): String = joinToString(ENTRY_SEPARATOR.toString()) { "${it.game}\t${it.text}" }
+
+internal fun decodeEntries(value: String?): List<StoryEntry>? = value?.let { encoded ->
+    if (encoded.isEmpty()) emptyList() else encoded.split(ENTRY_SEPARATOR).map { StoryEntry(it.substringBefore('\t'), it.substringAfter('\t')) }
+}
 
 internal fun TypeDto.toEfficacyRows(): List<TypeEfficacyEntity> =
     damageRelations.doubleDamageTo.map { TypeEfficacyEntity(name, it.name, 2f) } +
