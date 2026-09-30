@@ -40,6 +40,7 @@ import dev.pokedex.core.designsystem.theme.brandBrush
 import dev.pokedex.feature.collection.CollectionRoute
 import dev.pokedex.feature.detail.PokemonDetailRoute
 import dev.pokedex.feature.pokedex.PokedexRoute
+import dev.pokedex.feature.pokedex.TypeChartRoute
 import dev.pokedex.feature.today.TodayRoute
 
 sealed interface Destination
@@ -48,6 +49,7 @@ data object PokedexKey : Destination
 data object TeamsKey : Destination
 data object CollectionKey : Destination
 data class DetailKey(val pokemonId: Int) : Destination
+data object TypeChartKey : Destination
 
 private val TopLevel = listOf(TodayKey, PokedexKey, TeamsKey, CollectionKey)
 private val NavItems = listOf(
@@ -64,7 +66,7 @@ private val NavItems = listOf(
 @Composable
 fun PokedexApp() {
     val backStack = remember { mutableStateListOf<Destination>(TodayKey) }
-    val showNav = backStack.lastOrNull() !is DetailKey
+    val showNav = backStack.lastOrNull()?.let { it in TopLevel } == true
     val openDetail: (Int) -> Unit = { id -> backStack.add(DetailKey(id)) }
 
     Scaffold(
@@ -110,7 +112,12 @@ fun PokedexApp() {
                         }
                         entry<PokedexKey> {
                             Animated {
-                                PokedexRoute(onPokemonClick = { openDetail(it.id) }, onSettings = {}, contentPadding = padding)
+                                PokedexRoute(
+                                    onPokemonClick = { openDetail(it.id) },
+                                    onTypeChart = { backStack.add(TypeChartKey) },
+                                    onSettings = {},
+                                    contentPadding = padding,
+                                )
                             }
                         }
                         entry<TeamsKey> {
@@ -121,9 +128,16 @@ fun PokedexApp() {
                                 CollectionRoute(onPokemonClick = { openDetail(it.id) }, onSettings = {}, contentPadding = padding)
                             }
                         }
+                        entry<TypeChartKey> {
+                            TypeChartRoute(onBack = { backStack.removeLastOrNull() })
+                        }
                         entry<DetailKey> { key ->
                             Animated {
-                                PokemonDetailRoute(pokemonId = key.pokemonId, onBack = { backStack.removeLastOrNull() })
+                                PokemonDetailRoute(
+                                    pokemonId = key.pokemonId,
+                                    onBack = { backStack.removeLastOrNull() },
+                                    onOpenPokemon = openDetail,
+                                )
                             }
                         }
                     },

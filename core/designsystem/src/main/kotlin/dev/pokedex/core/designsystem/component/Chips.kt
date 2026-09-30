@@ -15,8 +15,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.Icon
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -34,19 +36,37 @@ import dev.pokedex.core.designsystem.theme.SceneGlassEdge
 import dev.pokedex.core.designsystem.theme.colour
 import dev.pokedex.core.model.PokemonType
 
-/** Pill filter. Selected pills also show a check, so selection never relies on colour alone. */
+/**
+ * Pill filter. Selected pills also show a check, so selection never relies on colour alone.
+ * With [multiSelect] it behaves as a checkbox; otherwise as one tab of a set.
+ */
 @Composable
-fun FilterPill(label: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun FilterPill(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    multiSelect: Boolean = false,
+    selectedContainer: Color = DexTheme.colors.primary,
+    selectedContent: Color = DexTheme.colors.onPrimary,
+) {
     val colors = DexTheme.colors
-    val background by animateColorAsState(if (selected) colors.primary else colors.surfaceGlass, label = "pillBackground")
-    val border by animateColorAsState(if (selected) colors.primary else colors.outline, label = "pillBorder")
-    val content by animateColorAsState(if (selected) colors.onPrimary else colors.text, label = "pillContent")
+    val background by animateColorAsState(if (selected) selectedContainer else colors.surfaceGlass, label = "pillBackground")
+    val border by animateColorAsState(if (selected) selectedContainer else colors.outline, label = "pillBorder")
+    val content by animateColorAsState(if (selected) selectedContent else colors.text, label = "pillContent")
     Row(
         modifier = modifier
+            .minimumInteractiveComponentSize()
             .clip(DexShape.full)
             .background(background)
             .border(1.dp, border, DexShape.full)
-            .selectable(selected = selected, onClick = onClick, role = Role.Tab)
+            .then(
+                if (multiSelect) {
+                    Modifier.toggleable(value = selected, onValueChange = { onClick() }, role = Role.Checkbox)
+                } else {
+                    Modifier.selectable(selected = selected, onClick = onClick, role = Role.Tab)
+                },
+            )
             .animateContentSize()
             .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -59,21 +79,32 @@ fun FilterPill(label: String, selected: Boolean, onClick: () -> Unit, modifier: 
     }
 }
 
-/** Outlined chip that opens a filter. */
+/** Outlined chip that opens a filter. A [badge] count shows how many filters are active. */
 @Composable
-fun DexChip(label: String, onClick: () -> Unit, modifier: Modifier = Modifier, icon: ImageVector? = null) {
+fun DexChip(label: String, onClick: () -> Unit, modifier: Modifier = Modifier, icon: ImageVector? = null, badge: Int = 0) {
     val colors = DexTheme.colors
+    val border by animateColorAsState(if (badge > 0) colors.primary else colors.outline, label = "chipBorder")
     Row(
         modifier = modifier
+            .minimumInteractiveComponentSize()
             .clip(DexShape.medium)
-            .border(1.dp, colors.outline, DexShape.medium)
+            .border(1.dp, border, DexShape.medium)
             .clickable(onClick = onClick, role = Role.Button)
+            .animateContentSize()
             .padding(horizontal = 14.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) Icon(icon, contentDescription = null, tint = colors.text, modifier = Modifier.size(16.dp))
         Text(label, style = DexTheme.type.labelMedium, color = colors.text)
+        AnimatedVisibility(badge > 0, enter = scaleIn() + fadeIn(), exit = scaleOut() + fadeOut()) {
+            Text(
+                badge.toString(),
+                style = DexTheme.type.labelSmall,
+                color = colors.onPrimary,
+                modifier = Modifier.clip(DexShape.full).background(colors.primary).padding(horizontal = 7.dp, vertical = 1.dp),
+            )
+        }
     }
 }
 

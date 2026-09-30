@@ -71,13 +71,15 @@ import dev.pokedex.core.designsystem.motion.rememberPulse
 import dev.pokedex.core.designsystem.theme.DexShape
 import dev.pokedex.core.designsystem.theme.DexTheme
 import dev.pokedex.core.designsystem.theme.detailPalette
+import dev.pokedex.core.model.EvolutionStep
 import dev.pokedex.core.model.Pokemon
 import dev.pokedex.core.model.PokemonType
+import dev.pokedex.core.model.TypeChart
 
 private val Tabs = listOf("About", "Stats", "Evolution", "Matchups", "Forms")
 
 @Composable
-fun PokemonDetailRoute(pokemonId: Int, onBack: () -> Unit) {
+fun PokemonDetailRoute(pokemonId: Int, onBack: () -> Unit, onOpenPokemon: (Int) -> Unit) {
     val viewModel = hiltViewModel<DetailViewModel, DetailViewModel.Factory>(
         key = "detail-$pokemonId",
         creationCallback = { it.create(pokemonId) },
@@ -92,7 +94,10 @@ fun PokemonDetailRoute(pokemonId: Int, onBack: () -> Unit) {
         caught = state.user.caught,
         favourite = state.user.favourite,
         cryPlaying = cry.playing,
+        chart = state.chart,
+        evolution = state.evolution,
         onBack = onBack,
+        onOpenPokemon = onOpenPokemon,
         onToggleCaught = viewModel::toggleCaught,
         onFavourite = viewModel::toggleFavourite,
         onShare = {
@@ -115,7 +120,10 @@ fun PokemonDetailScreen(
     caught: Boolean,
     favourite: Boolean,
     cryPlaying: Boolean,
+    chart: TypeChart,
+    evolution: List<EvolutionStep>,
     onBack: () -> Unit,
+    onOpenPokemon: (Int) -> Unit,
     onToggleCaught: () -> Unit,
     onFavourite: () -> Unit,
     onShare: () -> Unit,
@@ -184,11 +192,13 @@ fun PokemonDetailScreen(
                     transitionSpec = { fadeIn(tween(220)) togetherWith fadeOut(tween(120)) },
                     label = "detailTab",
                 ) { selected ->
-                    if (selected == 0) {
-                        AboutCard(pokemon, content, secondary)
-                    } else {
-                        GlassCard {
-                            Text("${Tabs[selected]} are coming soon.", style = DexTheme.type.bodyLarge, color = content)
+                    when (selected) {
+                        0 -> AboutCard(pokemon, content, secondary)
+                        1 -> StatsCard(pokemon, content, secondary)
+                        2 -> EvolutionCard(pokemon, evolution, onOpenPokemon, content, secondary)
+                        3 -> MatchupsCard(pokemon, chart, content, secondary)
+                        else -> GlassCard {
+                            Text("Forms are coming soon.", style = DexTheme.type.bodyLarge, color = content)
                         }
                     }
                 }
@@ -352,7 +362,8 @@ private fun PokemonDetailScreenPreview() {
     DexTheme {
         PokemonDetailScreen(
             SampleData.pikachu, caught = false, favourite = true, cryPlaying = false,
-            onBack = {}, onToggleCaught = {}, onFavourite = {}, onShare = {}, onPlayCry = {},
+            chart = TypeChart.Empty, evolution = emptyList(),
+            onBack = {}, onOpenPokemon = {}, onToggleCaught = {}, onFavourite = {}, onShare = {}, onPlayCry = {},
         )
     }
 }
