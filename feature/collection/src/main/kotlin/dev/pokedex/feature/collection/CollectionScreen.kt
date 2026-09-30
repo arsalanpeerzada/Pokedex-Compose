@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -199,7 +200,7 @@ private fun AlbumCard(entry: CollectionEntry, onClick: () -> Unit, modifier: Mod
     Column(
         modifier = modifier
             .pressScale(interaction)
-            .height(108.dp)
+            .heightIn(min = 108.dp)
             .clip(DexShape.album)
             .background(if (entry.state == CollectionState.Unseen) colors.surfaceGlass.copy(alpha = colors.surfaceGlass.alpha * 0.55f) else colors.surfaceGlass)
             .then(if (entry.state == CollectionState.Caught) Modifier.background(tint) else Modifier)

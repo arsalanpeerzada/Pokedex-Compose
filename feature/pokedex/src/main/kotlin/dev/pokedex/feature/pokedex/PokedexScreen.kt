@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -288,7 +289,8 @@ private fun TypeCard(pokemon: Pokemon, caught: Boolean, onClick: () -> Unit, mod
     Box(
         modifier
             .pressScale(interaction)
-            .height(156.dp)
+            // A minimum, not a fixed height, so long names still fit at 200% font size.
+            .heightIn(min = 156.dp)
             .clip(DexShape.card)
             .background(Brush.verticalGradient(listOf(top, bottom)))
             .clickable(interactionSource = interaction, indication = LocalIndication.current, onClick = onClick)

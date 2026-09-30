@@ -197,7 +197,7 @@ private fun SlotCard(member: Pokemon?, slot: Int, onAdd: () -> Unit, onOpen: () 
                 Modifier
                     .pressScale(interaction)
                     .fillMaxWidth()
-                    .height(152.dp)
+                    .heightIn(min = 152.dp)
                     .clip(DexShape.album)
                     .border(1.5.dp, colors.outline, DexShape.album)
                     .clickable(interactionSource = interaction, indication = LocalIndication.current, role = Role.Button, onClickLabel = "Add a Pokémon to slot ${slot + 1}", onClick = onAdd),
@@ -213,7 +213,7 @@ private fun SlotCard(member: Pokemon?, slot: Int, onAdd: () -> Unit, onOpen: () 
                 Modifier
                     .pressScale(interaction)
                     .fillMaxWidth()
-                    .height(152.dp)
+                    .heightIn(min = 152.dp)
                     .clip(DexShape.album)
                     .background(colors.surfaceGlass)
                     .background(tint)

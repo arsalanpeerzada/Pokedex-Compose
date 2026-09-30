@@ -30,7 +30,7 @@ jobs:
       - name: Build, unit test and lint
         run: |
           set -o pipefail
-          ./gradlew assembleDebug testDebugUnitTest lintDebug --stacktrace 2>&1 | tee build.log
+          ./gradlew assembleDebug testDebugUnitTest lintDebug :app:assembleRelease --stacktrace 2>&1 | tee build.log
 
       # Annotations show on the run page and in the API without signing in, unlike the raw log.
       - name: Summarise failures

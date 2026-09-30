@@ -13,6 +13,8 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     buildFeatures { compose = true }
+    // Compose UI tests run on the JVM with Robolectric, so CI needs no emulator.
+    testOptions { unitTests.isIncludeAndroidResources = true }
 }
 
 dependencies {
@@ -27,4 +29,8 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.robolectric)
+    testImplementation(platform(libs.androidx.compose.bom))
+    testImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 }

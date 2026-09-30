@@ -26,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -84,7 +85,10 @@ fun SettingsRoute(onBack: () -> Unit, viewModel: SettingsViewModel = hiltViewMod
     )
 }
 
-private val FontLicences = listOf("Fredoka" to "Fredoka-OFL.txt", "Nunito" to "Nunito-OFL.txt", "Silkscreen" to "Silkscreen-OFL.txt")
+/** In the public repository; readable once the docs are merged to main. */
+private const val PRIVACY_POLICY_URL = "https://github.com/arsalanpeerzada/Pokedex-Compose/blob/main/docs/privacy-policy.md"
+
+private val FontLicences =listOf("Fredoka" to "Fredoka-OFL.txt", "Nunito" to "Nunito-OFL.txt", "Silkscreen" to "Silkscreen-OFL.txt")
 
 @Composable
 fun SettingsScreen(
@@ -100,6 +104,7 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
 ) {
     val colors = DexTheme.colors
+    val uriHandler = LocalUriHandler.current
     var notificationsBlocked by rememberSaveable { mutableStateOf(false) }
     val askForNotifications = rememberNotificationPermission { granted ->
         notificationsBlocked = !granted
@@ -190,6 +195,15 @@ fun SettingsScreen(
                     color = colors.textSecondary,
                 )
                 Text("Pokémon data, artwork and cries come from PokeAPI.", style = DexTheme.type.bodyMedium, color = colors.textSecondary)
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 48.dp)
+                        .clickable(role = Role.Button, onClickLabel = "Open the privacy policy") { uriHandler.openUri(PRIVACY_POLICY_URL) },
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("Privacy policy", style = DexTheme.type.bodyLarge, color = colors.accent)
+                }
                 Text("Font licences (SIL Open Font Licence)", style = DexTheme.type.titleMedium, color = colors.text, modifier = Modifier.padding(top = 4.dp))
                 FontLicences.forEach { (font, file) ->
                     Row(

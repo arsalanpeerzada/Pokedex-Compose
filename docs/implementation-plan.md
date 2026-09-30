@@ -318,6 +318,13 @@ Two-week sprints, each ending with a Substack issue.
     - National days, which need the country.
     - Religious festivals, still an open decision.
     - Places Autocomplete: the city is typed.
+- Sprint 5 hardening, started 30 September 2026:
+  - **Compose UI tests on the JVM** with Robolectric 4.17, at the previews' phone size. They cover the Pokédex (screen-reader text, search, the Caught checkbox, the filters sheet, empty results) and Today (the weather-only hint, attribution, wrong guesses disabled, the story and the reminder offer).
+  - **Accessibility:** cards grow instead of clipping at 200% font size, chips meet the 48dp touch target, and confirmations are announced.
+  - **CI** now also builds the R8-minified release, which is 3.1 MB unsigned.
+  - **A draft privacy policy** is in `docs/privacy-policy.md`, linked from Settings. It needs review before publishing.
+  - To confirm with Google's terms: the day's saved "Why today?" line includes the weather description, which is stored on the phone.
+  - Needs a device or emulator: Baseline Profiles and Macrobenchmark, screenshot tests, a TalkBack walk-through, and checking the minified release at runtime.
 - Forms follow the no-regions rule. A form whose name includes a region gets a neutral label, such as "Vulpix, alternate form". Other forms read naturally, for example "Mega Charizard X" or "Rotom (Heat)".
 
 ## 9. Distribution
