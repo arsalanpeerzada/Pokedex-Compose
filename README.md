@@ -19,7 +19,8 @@ Application ID: `io.github.arsalanpeerzada.pokedex`.
 | `:core:database` | Room database: the cached Pokédex and the user's caught, seen and favourite state |
 | `:core:data` | Offline-first repository, plus sample data for previews |
 | `:core:designsystem` | Colours, fonts, shapes, icons, motion and components from the Figma foundations |
-| `:feature:today`, `:feature:pokedex`, `:feature:detail`, `:feature:collection`, `:feature:settings` | Screens and ViewModels, with light and dark previews |
+| `:feature:onboarding`, `:feature:today`, `:feature:pokedex`, `:feature:detail`, `:feature:collection`, `:feature:teams`, `:feature:settings` | Screens and ViewModels, with light and dark previews (the previews are the design reference) |
+| `:feature:widget` | Home-screen widget (Jetpack Glance): today's mystery Pokémon, revealed once guessed |
 
 ## Data
 The app is offline-first, following PokeAPI's fair-use policy. The species index is one request and the type index 18 more, each made once. Stats and facts for each Pokémon, and each evolution chain, are fetched the first time they're needed (at most four requests at a time) and kept in Room for good.

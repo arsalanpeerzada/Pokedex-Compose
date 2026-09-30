@@ -296,6 +296,11 @@ Two-week sprints, each ending with a Substack issue.
 - Also done:
   - Today saves its progress per date and keeps a real streak.
   - A Settings screen: theme, privacy choices (both off) and About with the font licences.
+- Later the same day, with the screens designed in Compose rather than Figma:
+  - Onboarding: welcome, an optional city (kept on the phone) and privacy choices (both off). The Pokédex downloads in the background meanwhile.
+  - Team Builder: teams of six, a Pokémon picker, rename and delete, and a type check covering shared weaknesses and attack coverage. Room v3 adds the team tables.
+  - Home-screen widget (Glance): a silhouette until you guess, then the artwork and name. It refreshes when you solve Today, and hourly.
+  - With this, every v1 screen exists in code. What's left is Sprint 3's context engine and weather, the daily notification, and hardening.
 - Forms follow the no-regions rule. A form whose name includes a region gets a neutral label, such as "Vulpix, alternate form". Other forms read naturally, for example "Mega Charizard X" or "Rotom (Heat)".
 
 ## 9. Distribution

@@ -3,6 +3,7 @@ package dev.pokedex.feature.today
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.pokedex.core.data.DailyPicker
 import dev.pokedex.core.data.DailyRepository
 import dev.pokedex.core.data.PokemonRepository
 import dev.pokedex.core.model.DailyResult
@@ -22,7 +23,6 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.inject.Inject
-import kotlin.random.Random
 
 data class TodayUiState(
     val loading: Boolean = true,
@@ -130,11 +130,7 @@ class TodayViewModel @Inject constructor(
     companion object {
         const val MAX_HINTS = 2
 
-        /** Deterministic for a date: one answer and three decoys, shuffled. */
-        fun dailyPick(pokemon: List<Pokemon>, date: LocalDate): Pair<Pokemon, List<Pokemon>> {
-            val random = Random(date.toEpochDay())
-            val picks = pokemon.shuffled(random).take(4)
-            return picks.first() to picks.shuffled(random)
-        }
+        /** Deterministic for a date: one answer and three decoys, shuffled. The widget uses the same rule. */
+        fun dailyPick(pokemon: List<Pokemon>, date: LocalDate): Pair<Pokemon, List<Pokemon>> = DailyPicker.pick(pokemon, date)
     }
 }

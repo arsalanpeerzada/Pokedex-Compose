@@ -30,4 +30,5 @@ include(
     ":feature:settings",
     ":feature:onboarding",
     ":feature:teams",
+    ":feature:widget",
 )
