@@ -150,7 +150,7 @@ fun TodayScreen(
                             label = "todayActions",
                         ) { revealed ->
                             if (revealed) {
-                                Revealed(answer, onOpenEntry)
+                                Revealed(answer, state.streakDays, onOpenEntry)
                             } else {
                                 Guessing(state, onGuess, onUseHint)
                             }
@@ -254,7 +254,7 @@ private fun Guessing(state: TodayUiState, onGuess: (Pokemon) -> Unit, onUseHint:
 }
 
 @Composable
-private fun Revealed(answer: Pokemon, onOpenEntry: (Pokemon) -> Unit) {
+private fun Revealed(answer: Pokemon, streakDays: Int, onOpenEntry: (Pokemon) -> Unit) {
     val colors = DexTheme.colors
     val remaining by produceState(untilMidnight()) {
         while (true) {
@@ -264,6 +264,14 @@ private fun Revealed(answer: Pokemon, onOpenEntry: (Pokemon) -> Unit) {
     }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Added to your collection.", style = DexTheme.type.bodyLarge, color = colors.onScene)
+        if (streakDays > 0) {
+            Text(
+                if (streakDays == 1) "1-day streak. Come back tomorrow to keep it going." else "$streakDays-day streak.",
+                style = DexTheme.type.labelLarge,
+                color = colors.onHighlight,
+                modifier = Modifier.clip(DexShape.full).background(colors.highlight).padding(horizontal = 12.dp, vertical = 6.dp),
+            )
+        }
         DexPrimaryButton("Open full entry", onClick = { onOpenEntry(answer) }, modifier = Modifier.fillMaxWidth())
         val seconds = remaining.seconds.coerceAtLeast(0)
         Text(

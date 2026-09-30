@@ -3,6 +3,7 @@ package dev.pokedex.feature.collection
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.pokedex.core.data.DailyRepository
 import dev.pokedex.core.data.PokemonRepository
 import dev.pokedex.core.model.CollectionEntry
 import dev.pokedex.core.model.CollectionState
@@ -12,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import javax.inject.Inject
 
 data class CollectionUiState(
@@ -20,9 +22,16 @@ data class CollectionUiState(
 )
 
 @HiltViewModel
-class CollectionViewModel @Inject constructor(private val repository: PokemonRepository) : ViewModel() {
+class CollectionViewModel @Inject constructor(
+    private val repository: PokemonRepository,
+    daily: DailyRepository,
+) : ViewModel() {
 
-    val state: StateFlow<CollectionUiState> = combine(repository.pokedex(), repository.userStates()) { pokemon, users ->
+    val state: StateFlow<CollectionUiState> = combine(
+        repository.pokedex(),
+        repository.userStates(),
+        daily.streak(LocalDate.now().toEpochDay()),
+    ) { pokemon, users, streak ->
         val entries = pokemon.map { p ->
             val user = users[p.id]
             val collectionState = when {
@@ -37,7 +46,7 @@ class CollectionViewModel @Inject constructor(private val repository: PokemonRep
             summary = CollectionSummary(
                 caught = users.values.count { it.caught },
                 total = pokemon.size,
-                streakDays = 0,
+                streakDays = streak,
                 latestCaught = users.filterValues { it.caught }.entries
                     .sortedByDescending { it.value.caughtAt }
                     .take(3)

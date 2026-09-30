@@ -3,20 +3,22 @@ package dev.pokedex.feature.today
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.pokedex.core.data.DailyRepository
 import dev.pokedex.core.data.PokemonRepository
+import dev.pokedex.core.model.DailyResult
 import dev.pokedex.core.model.Pokemon
 import dev.pokedex.core.model.WeatherScene
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.Instant
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.LocalDate
 import java.time.LocalTime
-import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.inject.Inject
@@ -34,34 +36,37 @@ data class TodayUiState(
     val revealed: Boolean = false,
     val hints: List<String> = emptyList(),
     val hintsLeft: Int = 0,
+    val streakDays: Int = 0,
 )
 
 /**
- * Today's Pokémon, the same for everyone on a given date. Until the context engine lands (Sprint 3),
- * the pick is seeded by the date alone and the scene follows the time of day, with no invented weather.
+ * Today's Pokémon, the same for everyone on a given date. Progress is saved per date, so leaving
+ * the app never resets a guess. Until the context engine lands (Sprint 3), the pick is seeded by
+ * the date alone and the scene follows the time of day, with no invented weather.
  */
 @HiltViewModel
-class TodayViewModel @Inject constructor(private val repository: PokemonRepository) : ViewModel() {
+class TodayViewModel @Inject constructor(
+    private val repository: PokemonRepository,
+    private val daily: DailyRepository,
+) : ViewModel() {
 
-    private data class Session(val wrong: Set<Int> = emptySet(), val revealed: Boolean = false, val hintsUsed: Int = 0)
-
-    private val session = MutableStateFlow(Session())
     private val syncFailed = MutableStateFlow(false)
     private val today = LocalDate.now()
+    private val day = today.toEpochDay()
     private val night = LocalTime.now().let { it.hour >= 19 || it.hour < 6 }
+    private val writeLock = Mutex()
     private var detailsRequested = false
 
     val state: StateFlow<TodayUiState> = combine(
         repository.pokedex(),
-        repository.userStates(),
-        session,
+        daily.result(day),
+        daily.streak(day),
         syncFailed,
-    ) { pokemon, users, s, failed ->
+    ) { pokemon, result, streak, failed ->
         if (pokemon.isEmpty()) return@combine TodayUiState(loading = !failed, failed = failed)
         val (answer, choices) = dailyPick(pokemon, today)
         requestDetails(choices)
-        val caughtToday = users[answer.id]?.caughtAt?.let { Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate() == today } == true
-        val hints = hintsFor(answer).take(s.hintsUsed)
+        val hintsUsed = result?.hintsUsed ?: 0
         TodayUiState(
             loading = false,
             dateLabel = today.format(DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.UK)),
@@ -69,10 +74,11 @@ class TodayViewModel @Inject constructor(private val repository: PokemonReposito
             isNight = night,
             answer = answer,
             choices = choices,
-            wrongGuesses = s.wrong,
-            revealed = s.revealed || caughtToday,
-            hints = hints,
-            hintsLeft = MAX_HINTS - s.hintsUsed,
+            wrongGuesses = result?.wrongGuesses.orEmpty(),
+            revealed = result?.solved == true,
+            hints = hintsFor(answer).take(hintsUsed),
+            hintsLeft = MAX_HINTS - hintsUsed,
+            streakDays = streak,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TodayUiState())
 
@@ -85,20 +91,29 @@ class TodayViewModel @Inject constructor(private val repository: PokemonReposito
         }
     }
 
-    /** Returns true when the guess is right, so the screen can celebrate or shake. */
-    fun guess(pokemon: Pokemon): Boolean {
-        val answer = state.value.answer ?: return false
-        if (pokemon.id == answer.id) {
-            session.update { it.copy(revealed = true) }
-            viewModelScope.launch { repository.setCaught(answer.id, caught = true) }
-            return true
+    fun guess(pokemon: Pokemon) {
+        val answer = state.value.answer ?: return
+        update(answer) { current ->
+            if (current.solved) return@update current
+            if (pokemon.id == answer.id) current.copy(solved = true) else current.copy(wrongGuesses = current.wrongGuesses + pokemon.id)
         }
-        session.update { it.copy(wrong = it.wrong + pokemon.id) }
-        return false
+        if (pokemon.id == answer.id) viewModelScope.launch { repository.setCaught(answer.id, caught = true) }
     }
 
     fun useHint() {
-        session.update { if (it.hintsUsed < MAX_HINTS) it.copy(hintsUsed = it.hintsUsed + 1) else it }
+        val answer = state.value.answer ?: return
+        update(answer) { if (it.hintsUsed < MAX_HINTS) it.copy(hintsUsed = it.hintsUsed + 1) else it }
+    }
+
+    /** Reads the saved result, applies [change] and writes it back, one change at a time. */
+    private fun update(answer: Pokemon, change: (DailyResult) -> DailyResult) {
+        viewModelScope.launch {
+            writeLock.withLock {
+                val current = daily.result(day).first() ?: DailyResult(day, answer.id, solved = false, wrongGuesses = emptySet(), hintsUsed = 0)
+                val next = change(current)
+                if (next != current) daily.save(next)
+            }
+        }
     }
 
     private fun requestDetails(choices: List<Pokemon>) {
