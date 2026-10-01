@@ -9,6 +9,7 @@ import dev.pokedex.core.data.UserPreferencesRepository
 import dev.pokedex.core.domain.TodayPick
 import dev.pokedex.core.domain.TodayPicker
 import dev.pokedex.core.model.DailyResult
+import dev.pokedex.core.model.Measures
 import dev.pokedex.core.model.Pokemon
 import dev.pokedex.core.model.WeatherProvider
 import dev.pokedex.core.model.WeatherScene
@@ -33,7 +34,6 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.inject.Inject
-import kotlin.math.roundToInt
 
 data class TodayUiState(
     val loading: Boolean = true,
@@ -100,7 +100,7 @@ class TodayViewModel @Inject constructor(
             scene = p.scene,
             isNight = p.isNight,
             city = p.city,
-            weatherLine = p.weather?.let { "${it.description} · ${it.temperatureCelsius.roundToInt()}°C" },
+            weatherLine = p.weather?.let { "${it.description} · ${Measures.temperature(it.temperatureCelsius, prefs.units)}" },
             weatherProvider = p.weather?.provider,
             answer = answer,
             choices = p.choices.map { if (it.id == answer.id) answer else it },

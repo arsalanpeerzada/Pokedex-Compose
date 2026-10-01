@@ -45,6 +45,8 @@ import dev.pokedex.core.designsystem.theme.DexShape
 import dev.pokedex.core.designsystem.theme.DexTheme
 import dev.pokedex.core.designsystem.theme.colour
 import dev.pokedex.core.model.EvolutionStep
+import dev.pokedex.core.model.Measures
+import dev.pokedex.core.model.Units
 import dev.pokedex.core.model.Pokemon
 import dev.pokedex.core.model.PokemonType
 import dev.pokedex.core.model.TypeChart
@@ -138,7 +140,7 @@ private const val PERSON_METRES = 1.7
 
 /** The Pokémon next to a 1.7 m person, both to scale. Artwork has some padding, so it's approximate. */
 @Composable
-internal fun SizeComparison(pokemon: Pokemon, content: Color, secondary: Color) {
+internal fun SizeComparison(pokemon: Pokemon, units: Units, content: Color, secondary: Color) {
     val height = pokemon.heightMetres ?: return
     val tallest = maxOf(height, PERSON_METRES)
     val area = 140.dp
@@ -151,7 +153,7 @@ internal fun SizeComparison(pokemon: Pokemon, content: Color, secondary: Color) 
                 .fillMaxWidth()
                 .height(area + 4.dp)
                 .semantics(mergeDescendants = true) {
-                    contentDescription = "${pokemon.name} is %.1f metres tall, next to a %.1f metre person".format(height, PERSON_METRES)
+                    contentDescription = "${pokemon.name} is ${Measures.height(height, units)} tall, next to a ${Measures.height(PERSON_METRES, units)} person"
                 },
             horizontalArrangement = Arrangement.spacedBy(28.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.Bottom,
@@ -164,7 +166,7 @@ internal fun SizeComparison(pokemon: Pokemon, content: Color, secondary: Color) 
             )
         }
         Text(
-            "To scale beside a %.1f m person (approximate).".format(PERSON_METRES),
+            "To scale beside a ${Measures.height(PERSON_METRES, units)} person (approximate).",
             style = DexTheme.type.labelSmall,
             color = secondary,
         )

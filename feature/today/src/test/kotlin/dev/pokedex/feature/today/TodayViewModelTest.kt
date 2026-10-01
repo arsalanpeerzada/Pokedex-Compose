@@ -10,6 +10,7 @@ import dev.pokedex.core.model.EvolutionStep
 import dev.pokedex.core.model.Pokemon
 import dev.pokedex.core.model.ThemeMode
 import dev.pokedex.core.model.TypeChart
+import dev.pokedex.core.model.Units
 import dev.pokedex.core.model.UserPreferences
 import dev.pokedex.core.model.UserState
 import dev.pokedex.core.model.WeatherScene
@@ -162,6 +163,7 @@ private class FakePreferences : UserPreferencesRepository {
     private val state = MutableStateFlow(UserPreferences())
     override val preferences: Flow<UserPreferences> = state
     override suspend fun setTheme(theme: ThemeMode) { state.value = state.value.copy(theme = theme) }
+    override suspend fun setUnits(units: Units) { state.value = state.value.copy(units = units) }
     override suspend fun setUsageStats(enabled: Boolean) { state.value = state.value.copy(usageStats = enabled) }
     override suspend fun setCrashReports(enabled: Boolean) { state.value = state.value.copy(crashReports = enabled) }
     override suspend fun setCity(city: String?) { state.value = state.value.copy(city = city) }

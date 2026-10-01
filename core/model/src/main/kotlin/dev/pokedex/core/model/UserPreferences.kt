@@ -8,6 +8,7 @@ enum class ThemeMode(val label: String) { System("System"), Light("Light"), Dark
  */
 data class UserPreferences(
     val theme: ThemeMode = ThemeMode.System,
+    val units: Units = Units.Metric,
     val usageStats: Boolean = false,
     val crashReports: Boolean = false,
     val onboardingDone: Boolean = false,

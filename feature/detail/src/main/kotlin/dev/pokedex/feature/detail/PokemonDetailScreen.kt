@@ -80,6 +80,8 @@ import dev.pokedex.core.designsystem.theme.DexShape
 import dev.pokedex.core.designsystem.theme.DexTheme
 import dev.pokedex.core.designsystem.theme.detailPalette
 import dev.pokedex.core.model.EvolutionStep
+import dev.pokedex.core.model.Measures
+import dev.pokedex.core.model.Units
 import dev.pokedex.core.model.Pokemon
 import dev.pokedex.core.model.PokemonType
 import dev.pokedex.core.model.Team
@@ -108,6 +110,7 @@ fun PokemonDetailRoute(pokemonId: Int, onBack: () -> Unit, onOpenPokemon: (Int) 
             chart = state.chart,
             evolution = state.evolution,
             teams = state.teams,
+            units = state.units,
             onAddToTeam = viewModel::addToTeam,
             onAddToNewTeam = viewModel::addToNewTeam,
             onBack = onBack,
@@ -143,6 +146,7 @@ fun PokemonDetailScreen(
     chart: TypeChart,
     evolution: List<EvolutionStep>,
     teams: List<Team>,
+    units: Units,
     onAddToTeam: (Team) -> Unit,
     onAddToNewTeam: () -> Unit,
     onBack: () -> Unit,
@@ -249,7 +253,7 @@ fun PokemonDetailScreen(
                     label = "detailTab",
                 ) { selected ->
                     when (selected) {
-                        0 -> AboutCard(pokemon, content, secondary)
+                        0 -> AboutCard(pokemon, units, content, secondary)
                         1 -> StatsCard(pokemon, content, secondary)
                         2 -> EvolutionCard(pokemon, evolution, onOpenPokemon, content, secondary)
                         3 -> MatchupsCard(pokemon, chart, content, secondary)
@@ -333,7 +337,7 @@ private fun FavouriteButton(favourite: Boolean, onClick: () -> Unit, content: Co
 }
 
 @Composable
-private fun AboutCard(pokemon: Pokemon, content: Color, secondary: Color) {
+private fun AboutCard(pokemon: Pokemon, units: Units, content: Color, secondary: Color) {
     GlassCard {
         val entry = pokemon.flavourText
         when {
@@ -345,11 +349,11 @@ private fun AboutCard(pokemon: Pokemon, content: Color, secondary: Color) {
             else -> Text("Loading the Pokédex entry…", style = DexTheme.type.bodyLarge, color = secondary, modifier = Modifier.graphicsLayer { alpha = 0.8f })
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Fact("Height", pokemon.heightMetres?.let { "%.1f m".format(it) }, pokemon.hasDetails, content, secondary, Modifier.weight(1f))
-            Fact("Weight", pokemon.weightKilograms?.let { "%.1f kg".format(it) }, pokemon.hasDetails, content, secondary, Modifier.weight(1f))
+            Fact("Height", pokemon.heightMetres?.let { Measures.height(it, units) }, pokemon.hasDetails, content, secondary, Modifier.weight(1f))
+            Fact("Weight", pokemon.weightKilograms?.let { Measures.weight(it, units) }, pokemon.hasDetails, content, secondary, Modifier.weight(1f))
             Fact("Catch rate", pokemon.catchRate?.toString(), pokemon.hasDetails, content, secondary, Modifier.weight(1f))
         }
-        SizeComparison(pokemon, content, secondary)
+        SizeComparison(pokemon, units, content, secondary)
     }
 }
 
@@ -450,7 +454,7 @@ private fun PokemonDetailScreenPreview() {
     DexTheme {
         PokemonDetailScreen(
             SampleData.pikachu, caught = false, favourite = true, cryPlaying = false,
-            chart = TypeChart.Empty, evolution = emptyList(), teams = emptyList(), onAddToTeam = {}, onAddToNewTeam = {},
+            chart = TypeChart.Empty, evolution = emptyList(), teams = emptyList(), units = Units.Metric, onAddToTeam = {}, onAddToNewTeam = {},
             onBack = {}, onOpenPokemon = {}, onToggleCaught = {}, onFavourite = {}, onShare = {}, onPlayCry = {},
         )
     }

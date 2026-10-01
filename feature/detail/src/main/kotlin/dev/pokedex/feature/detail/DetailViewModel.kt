@@ -8,6 +8,8 @@ import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.pokedex.core.data.PokemonRepository
 import dev.pokedex.core.data.TeamRepository
+import dev.pokedex.core.data.UserPreferencesRepository
+import dev.pokedex.core.model.Units
 import dev.pokedex.core.model.EvolutionStep
 import dev.pokedex.core.model.Pokemon
 import dev.pokedex.core.model.Team
@@ -34,6 +36,7 @@ data class DetailUiState(
     val chart: TypeChart = TypeChart.Empty,
     val evolution: List<EvolutionStep> = emptyList(),
     val teams: List<Team> = emptyList(),
+    val units: Units = Units.Metric,
     /** A short confirmation after adding to a team, shown once. */
     val message: String? = null,
 )
@@ -44,6 +47,7 @@ class DetailViewModel @AssistedInject constructor(
     @Assisted private val pokemonId: Int,
     private val repository: PokemonRepository,
     private val teams: TeamRepository,
+    preferences: UserPreferencesRepository,
 ) : ViewModel() {
 
     private val pokemon = repository.pokemon(pokemonId)
@@ -51,12 +55,12 @@ class DetailViewModel @AssistedInject constructor(
     private val message = MutableStateFlow<String?>(null)
 
     val state: StateFlow<DetailUiState> = combine(
-        combine(pokemon, repository.userStates().map { it[pokemonId] ?: UserState() }, ::Pair),
+        combine(pokemon, repository.userStates().map { it[pokemonId] ?: UserState() }, preferences.preferences.map { it.units }, ::Triple),
         repository.typeChart(),
         chainId.flatMapLatest { id -> if (id == null) flowOf(emptyList()) else repository.evolution(id) },
         teams.teams(),
         message,
-    ) { (p, user), chart, evolution, teamList, msg -> DetailUiState(p, user, chart, evolution, teamList, msg) }
+    ) { (p, user, units), chart, evolution, teamList, msg -> DetailUiState(p, user, chart, evolution, teamList, units, msg) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DetailUiState())
 
     init {

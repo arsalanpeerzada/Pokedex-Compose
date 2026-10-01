@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import dev.pokedex.core.model.ThemeMode
+import dev.pokedex.core.model.Units
 import dev.pokedex.core.model.UserPreferences
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -16,6 +17,7 @@ import javax.inject.Singleton
 interface UserPreferencesRepository {
     val preferences: Flow<UserPreferences>
     suspend fun setTheme(theme: ThemeMode)
+    suspend fun setUnits(units: Units)
     suspend fun setUsageStats(enabled: Boolean)
     suspend fun setCrashReports(enabled: Boolean)
     suspend fun setCity(city: String?)
@@ -34,6 +36,7 @@ class DataStoreUserPreferencesRepository @Inject constructor(
     override val preferences: Flow<UserPreferences> = store.data.map { prefs ->
         UserPreferences(
             theme = prefs[THEME]?.let { name -> ThemeMode.entries.firstOrNull { it.name == name } } ?: ThemeMode.System,
+            units = prefs[UNITS]?.let { name -> Units.entries.firstOrNull { it.name == name } } ?: Units.Metric,
             usageStats = prefs[USAGE_STATS] ?: false,
             crashReports = prefs[CRASH_REPORTS] ?: false,
             onboardingDone = prefs[ONBOARDING_DONE] ?: false,
@@ -48,6 +51,10 @@ class DataStoreUserPreferencesRepository @Inject constructor(
 
     override suspend fun setTheme(theme: ThemeMode) {
         store.edit { it[THEME] = theme.name }
+    }
+
+    override suspend fun setUnits(units: Units) {
+        store.edit { it[UNITS] = units.name }
     }
 
     override suspend fun setUsageStats(enabled: Boolean) {
@@ -95,6 +102,7 @@ class DataStoreUserPreferencesRepository @Inject constructor(
 
     private companion object {
         val THEME = stringPreferencesKey("theme")
+        val UNITS = stringPreferencesKey("units")
         val USAGE_STATS = booleanPreferencesKey("usage_stats")
         val CRASH_REPORTS = booleanPreferencesKey("crash_reports")
         val ONBOARDING_DONE = booleanPreferencesKey("onboarding_done")

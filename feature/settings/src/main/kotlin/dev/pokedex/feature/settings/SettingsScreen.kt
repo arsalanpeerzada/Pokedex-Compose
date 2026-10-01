@@ -49,6 +49,7 @@ import dev.pokedex.core.designsystem.component.rememberNotificationPermission
 import dev.pokedex.core.designsystem.icon.DexIcons
 import dev.pokedex.core.designsystem.theme.DexTheme
 import dev.pokedex.core.model.ThemeMode
+import dev.pokedex.core.model.Units
 import dev.pokedex.core.model.UserPreferences
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -62,6 +63,7 @@ class SettingsViewModel @Inject constructor(private val repository: UserPreferen
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UserPreferences())
 
     fun setTheme(theme: ThemeMode) = viewModelScope.launch { repository.setTheme(theme) }
+    fun setUnits(units: Units) = viewModelScope.launch { repository.setUnits(units) }
     fun setUsageStats(enabled: Boolean) = viewModelScope.launch { repository.setUsageStats(enabled) }
     fun setCrashReports(enabled: Boolean) = viewModelScope.launch { repository.setCrashReports(enabled) }
     fun setCity(city: String) = viewModelScope.launch { repository.setCity(city) }
@@ -77,6 +79,7 @@ fun SettingsRoute(onBack: () -> Unit, viewModel: SettingsViewModel = hiltViewMod
         versionName = remember { context.versionName() },
         onBack = onBack,
         onTheme = { viewModel.setTheme(it) },
+        onUnits = { viewModel.setUnits(it) },
         onUsageStats = { viewModel.setUsageStats(it) },
         onCrashReports = { viewModel.setCrashReports(it) },
         onCity = { viewModel.setCity(it) },
@@ -96,6 +99,7 @@ fun SettingsScreen(
     versionName: String,
     onBack: () -> Unit,
     onTheme: (ThemeMode) -> Unit,
+    onUnits: (Units) -> Unit,
     onUsageStats: (Boolean) -> Unit,
     onCrashReports: (Boolean) -> Unit,
     onCity: (String) -> Unit,
@@ -130,6 +134,17 @@ fun SettingsScreen(
                         FilterPill(mode.label, selected = preferences.theme == mode, onClick = { onTheme(mode) })
                     }
                 }
+                Text("Units", style = DexTheme.type.titleMedium, color = colors.text, modifier = Modifier.padding(top = 4.dp))
+                Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Units.entries.forEach { units ->
+                        FilterPill(units.label, selected = preferences.units == units, onClick = { onUnits(units) })
+                    }
+                }
+                Text(
+                    if (preferences.units == Units.Metric) "Metres, kilograms and °C." else "Feet and inches, pounds and °F.",
+                    style = DexTheme.type.labelMedium,
+                    color = colors.textSecondary,
+                )
             }
             Section("Today") {
                 Text("Your city", style = DexTheme.type.titleMedium, color = colors.text)
@@ -254,6 +269,6 @@ private fun Context.versionName(): String =
 @Composable
 private fun SettingsPreview() {
     DexTheme {
-        SettingsScreen(UserPreferences(), "0.1.0", onBack = {}, onTheme = {}, onUsageStats = {}, onCrashReports = {}, onCity = {}, onReminder = {}, readLicence = { "" })
+        SettingsScreen(UserPreferences(), "0.1.0", onBack = {}, onTheme = {}, onUnits = {}, onUsageStats = {}, onCrashReports = {}, onCity = {}, onReminder = {}, readLicence = { "" })
     }
 }
