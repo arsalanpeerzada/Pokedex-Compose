@@ -8,7 +8,13 @@ import dev.pokedex.core.model.WeatherScene
 
 /** Weather backgrounds for Today, matching the colour board. Dark mode uses deeper, saturated stops. */
 fun WeatherScene.brush(dark: Boolean): Brush {
-    val (top, bottom) = when (this) {
+    val (top, bottom) = stops(dark)
+    return Brush.verticalGradient(listOf(Color(top), Color(bottom)))
+}
+
+/** The scene's top and bottom colours as ARGB, for drawing outside Compose (the share card). */
+fun WeatherScene.stops(dark: Boolean): Pair<Long, Long> =
+    when (this) {
         WeatherScene.Clear -> if (dark) 0xFF1E5AA8 to 0xFF0B1E45 else 0xFFFFE07A to 0xFF7CC8FF
         WeatherScene.Heat -> if (dark) 0xFFB8430F to 0xFF4A0E14 else 0xFFFFB347 to 0xFFFF5A36
         WeatherScene.Cloud -> if (dark) 0xFF3A4460 to 0xFF1A1F33 else 0xFFDCE2EE to 0xFFA7B3CC
@@ -18,8 +24,6 @@ fun WeatherScene.brush(dark: Boolean): Brush {
         WeatherScene.Wind -> if (dark) 0xFF0F7E72 to 0xFF062B2A else 0xFFA6F2DC to 0xFF3CC7B4
         WeatherScene.Night -> if (dark) 0xFF1B1F6B to 0xFF070920 else 0xFF3B3F9E to 0xFF0F1240
     }
-    return Brush.verticalGradient(listOf(Color(top), Color(bottom)))
-}
 
 fun DexColors.brandBrush(): Brush = Brush.verticalGradient(listOf(brandGradientTop, brandGradientBottom))
 

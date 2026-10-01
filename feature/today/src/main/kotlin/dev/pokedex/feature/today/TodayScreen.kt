@@ -40,6 +40,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,6 +52,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -84,6 +86,7 @@ import dev.pokedex.core.model.StoryEntry
 import dev.pokedex.core.model.WeatherProvider
 import dev.pokedex.core.model.WeatherScene
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -97,6 +100,8 @@ fun TodayRoute(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val askForNotifications = rememberNotificationPermission { granted -> viewModel.answerReminder(granted) }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     TodayScreen(
         state = state,
         onGuess = { viewModel.guess(it) },
@@ -105,6 +110,10 @@ fun TodayRoute(
         onOpenEntry = onOpenEntry,
         onSettings = onSettings,
         onReminder = { yes -> if (yes) askForNotifications() else viewModel.answerReminder(false) },
+        onShare = {
+            val answer = state.answer ?: return@TodayScreen
+            scope.launch { ShareCard.share(context, ShareCardContent(answer, state.scene, state.dateLabel, state.reason)) }
+        },
         contentPadding = contentPadding,
     )
 }
@@ -120,6 +129,7 @@ fun TodayScreen(
     onSettings: () -> Unit,
     onReminder: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
+    onShare: () -> Unit = {},
     contentPadding: PaddingValues = PaddingValues(),
 ) {
     val colors = DexTheme.colors
@@ -161,7 +171,7 @@ fun TodayScreen(
                             label = "todayActions",
                         ) { revealed ->
                             if (revealed) {
-                                Revealed(answer, state, onOpenEntry, onReminder)
+                                Revealed(answer, state, onOpenEntry, onReminder, onShare)
                             } else {
                                 Guessing(state, onGuess, onUseHint)
                             }
@@ -305,7 +315,7 @@ private fun Guessing(state: TodayUiState, onGuess: (Pokemon) -> Unit, onUseHint:
 }
 
 @Composable
-private fun Revealed(answer: Pokemon, state: TodayUiState, onOpenEntry: (Pokemon) -> Unit, onReminder: (Boolean) -> Unit) {
+private fun Revealed(answer: Pokemon, state: TodayUiState, onOpenEntry: (Pokemon) -> Unit, onReminder: (Boolean) -> Unit, onShare: () -> Unit) {
     val colors = DexTheme.colors
     val streakDays = state.streakDays
     val remaining by produceState(untilMidnight()) {
@@ -326,7 +336,10 @@ private fun Revealed(answer: Pokemon, state: TodayUiState, onOpenEntry: (Pokemon
                 modifier = Modifier.clip(DexShape.full).background(colors.highlight).padding(horizontal = 12.dp, vertical = 6.dp),
             )
         }
-        DexPrimaryButton("Open full entry", onClick = { onOpenEntry(answer) }, modifier = Modifier.fillMaxWidth())
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            DexPrimaryButton("Open full entry", onClick = { onOpenEntry(answer) }, modifier = Modifier.weight(1f))
+            DexSceneButton("Share", onClick = onShare, modifier = Modifier.weight(1f))
+        }
         val seconds = remaining.seconds.coerceAtLeast(0)
         Text(
             "Next Pokémon in %02d:%02d:%02d".format(seconds / 3600, seconds % 3600 / 60, seconds % 60),
