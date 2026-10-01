@@ -69,6 +69,7 @@ import dev.pokedex.core.designsystem.component.DexIconButton
 import dev.pokedex.core.designsystem.component.DexPreviews
 import dev.pokedex.core.designsystem.component.DexPrimaryButton
 import dev.pokedex.core.designsystem.component.DexTopBar
+import dev.pokedex.core.designsystem.component.FilterPill
 import dev.pokedex.core.designsystem.component.GlassCard
 import dev.pokedex.core.designsystem.component.PokemonArtwork
 import dev.pokedex.core.designsystem.component.TypeBadge
@@ -161,6 +162,7 @@ fun PokemonDetailScreen(
     val secondary by animateColorAsState(palette.contentSecondary, tween(600), label = "detailSecondary")
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var choosingTeam by rememberSaveable { mutableStateOf(false) }
+    var shiny by rememberSaveable(pokemon.id) { mutableStateOf(false) }
 
     if (choosingTeam) {
         TeamChooser(
@@ -189,7 +191,25 @@ fun PokemonDetailScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            PokemonArtwork(pokemon, size = 230.dp, glowAlpha = if (colors.isDark) 0.5f else 0.6f, animated = true)
+            // The artwork pops a little when switching between normal and shiny colours.
+            val pop = remember { Animatable(1f) }
+            val lastShiny = remember { booleanArrayOf(shiny) }
+            LaunchedEffect(shiny) {
+                if (shiny != lastShiny[0]) {
+                    pop.animateTo(1.08f, tween(120))
+                    pop.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy))
+                }
+                lastShiny[0] = shiny
+            }
+            PokemonArtwork(
+                pokemon,
+                size = 230.dp,
+                glowAlpha = if (colors.isDark) 0.5f else 0.6f,
+                animated = true,
+                shiny = shiny,
+                modifier = Modifier.graphicsLayer { scaleX = pop.value; scaleY = pop.value },
+            )
+            FilterPill("Shiny", selected = shiny, onClick = { shiny = !shiny }, multiSelect = true)
             StaggeredEntrance(0) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text("#${pokemon.number}", style = DexTheme.type.numberLarge, color = secondary)
@@ -329,6 +349,7 @@ private fun AboutCard(pokemon: Pokemon, content: Color, secondary: Color) {
             Fact("Weight", pokemon.weightKilograms?.let { "%.1f kg".format(it) }, pokemon.hasDetails, content, secondary, Modifier.weight(1f))
             Fact("Catch rate", pokemon.catchRate?.toString(), pokemon.hasDetails, content, secondary, Modifier.weight(1f))
         }
+        SizeComparison(pokemon, content, secondary)
     }
 }
 

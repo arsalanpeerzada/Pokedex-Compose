@@ -41,6 +41,7 @@ fun PokemonArtwork(
     glow: Color = pokemon.primaryType.colour().container,
     glowAlpha: Float = 0.5f,
     animated: Boolean = false,
+    shiny: Boolean = false,
 ) {
     val pulse = if (animated) rememberPulse() else 1f
     Box(modifier.size(size), contentAlignment = Alignment.Center) {
@@ -51,8 +52,8 @@ fun PokemonArtwork(
                 .background(Brush.radialGradient(listOf(glow.copy(alpha = glowAlpha), Color.Transparent))),
         )
         AsyncImage(
-            model = pokemon.artworkUrl,
-            contentDescription = pokemon.name,
+            model = if (shiny) pokemon.shinyArtworkUrl else pokemon.artworkUrl,
+            contentDescription = if (shiny) "${pokemon.name}, shiny" else pokemon.name,
             modifier = Modifier
                 .fillMaxSize()
                 .then(if (animated) Modifier.floating() else Modifier)

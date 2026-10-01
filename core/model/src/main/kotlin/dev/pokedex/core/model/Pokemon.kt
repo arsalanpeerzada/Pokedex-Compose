@@ -63,6 +63,10 @@ data class Pokemon(
     /** Official artwork served by PokeAPI's sprite repository. */
     val artworkUrl: String
         get() = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/$id.png"
+
+    /** The shiny colouring, from the same repository (checked 1 October 2026). */
+    val shinyArtworkUrl: String
+        get() = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/$id.png"
 }
 
 /** Generations by National Pokédex range. Browsing is by generation, never by region. */

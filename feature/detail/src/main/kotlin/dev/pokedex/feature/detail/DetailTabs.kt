@@ -5,6 +5,7 @@ package dev.pokedex.feature.detail
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -26,6 +27,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -127,6 +131,59 @@ private fun factorLabel(factor: Float): String = when (factor) {
     0.25f -> "¼×"
     0.5f -> "½×"
     else -> "${factor.toInt()}×"
+}
+
+/** A reference person for scale. Their height is a stated assumption, not an average. */
+private const val PERSON_METRES = 1.7
+
+/** The Pokémon next to a 1.7 m person, both to scale. Artwork has some padding, so it's approximate. */
+@Composable
+internal fun SizeComparison(pokemon: Pokemon, content: Color, secondary: Color) {
+    val height = pokemon.heightMetres ?: return
+    val tallest = maxOf(height, PERSON_METRES)
+    val area = 140.dp
+    val personHeight = area * (PERSON_METRES / tallest).toFloat()
+    val pokemonHeight = (area * (height / tallest).toFloat()).coerceAtLeast(10.dp)
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text("Size", style = DexTheme.type.titleMedium, color = content, modifier = Modifier.semantics { heading() })
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .height(area + 4.dp)
+                .semantics(mergeDescendants = true) {
+                    contentDescription = "${pokemon.name} is %.1f metres tall, next to a %.1f metre person".format(height, PERSON_METRES)
+                },
+            horizontalArrangement = Arrangement.spacedBy(28.dp, Alignment.CenterHorizontally),
+            verticalAlignment = Alignment.Bottom,
+        ) {
+            PersonFigure(Modifier.height(personHeight).width(personHeight * 0.38f), content.copy(alpha = 0.55f))
+            AsyncImage(
+                model = pokemon.artworkUrl,
+                contentDescription = null,
+                modifier = Modifier.size(pokemonHeight),
+            )
+        }
+        Text(
+            "To scale beside a %.1f m person (approximate).".format(PERSON_METRES),
+            style = DexTheme.type.labelSmall,
+            color = secondary,
+        )
+    }
+}
+
+/** A simple standing figure: head, body and legs. */
+@Composable
+private fun PersonFigure(modifier: Modifier, colour: Color) {
+    Canvas(modifier) {
+        val w = size.width
+        val h = size.height
+        val head = w * 0.28f
+        drawCircle(colour, radius = head, center = Offset(w / 2, head))
+        drawRoundRect(colour, topLeft = Offset(w * 0.12f, head * 2.2f), size = Size(w * 0.76f, h * 0.42f), cornerRadius = CornerRadius(w * 0.3f))
+        val legTop = head * 2.2f + h * 0.38f
+        drawRoundRect(colour, topLeft = Offset(w * 0.2f, legTop), size = Size(w * 0.26f, h - legTop), cornerRadius = CornerRadius(w * 0.13f))
+        drawRoundRect(colour, topLeft = Offset(w * 0.54f, legTop), size = Size(w * 0.26f, h - legTop), cornerRadius = CornerRadius(w * 0.13f))
+    }
 }
 
 @Composable
