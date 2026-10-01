@@ -22,7 +22,9 @@ import javax.inject.Singleton
 import kotlin.coroutines.resume
 
 /** Where the user's city is, as typed, looked up on the device. */
-data class CityLocation(val name: String, val latitude: Double, val longitude: Double)
+data class CityLocation(val name: String, val latitude: Double, val longitude: Double, val country: String? = null)
+
+private data class Geocoded(val latitude: Double, val longitude: Double, val country: String?)
 
 /**
  * Current weather for the user's city. Google Weather when a key is configured, otherwise
@@ -50,11 +52,11 @@ class WeatherRepository @Inject constructor(
         val name = prefs.city ?: return null
         val lat = prefs.cityLatitude
         val lon = prefs.cityLongitude
-        if (lat != null && lon != null) return CityLocation(name, lat, lon)
+        if (lat != null && lon != null) return CityLocation(name, lat, lon, prefs.cityCountry)
         val found = geocode(name) ?: return null
-        preferences.setCityLocation(name, found.first, found.second)
+        preferences.setCityLocation(name, found.latitude, found.longitude, found.country)
         val saved = preferences.preferences.first()
-        return CityLocation(name, saved.cityLatitude ?: found.first, saved.cityLongitude ?: found.second)
+        return CityLocation(name, saved.cityLatitude ?: found.latitude, saved.cityLongitude ?: found.longitude, saved.cityCountry ?: found.country)
     }
 
     /** Current weather, or null when there's no city, no connection, or the provider fails. */
@@ -74,7 +76,7 @@ class WeatherRepository @Inject constructor(
     }
 
     /** Android's own geocoder. Returns null if the city isn't found or no geocoder is available. */
-    private suspend fun geocode(name: String): Pair<Double, Double>? {
+    private suspend fun geocode(name: String): Geocoded? {
         if (!Geocoder.isPresent()) return null
         val geocoder = Geocoder(context, Locale.UK)
         return try {
@@ -83,7 +85,7 @@ class WeatherRepository @Inject constructor(
                     suspendCancellableCoroutine { cont ->
                         geocoder.getFromLocationName(name, 1, object : Geocoder.GeocodeListener {
                             override fun onGeocode(addresses: MutableList<android.location.Address>) {
-                                cont.resume(addresses.firstOrNull()?.let { it.latitude to it.longitude })
+                                cont.resume(addresses.firstOrNull()?.let { Geocoded(it.latitude, it.longitude, it.countryCode) })
                             }
 
                             override fun onError(errorMessage: String?) {
@@ -95,7 +97,7 @@ class WeatherRepository @Inject constructor(
             } else {
                 withContext(Dispatchers.IO) {
                     @Suppress("DEPRECATION")
-                    geocoder.getFromLocationName(name, 1)?.firstOrNull()?.let { it.latitude to it.longitude }
+                    geocoder.getFromLocationName(name, 1)?.firstOrNull()?.let { Geocoded(it.latitude, it.longitude, it.countryCode) }
                 }
             }
         } catch (e: CancellationException) {

@@ -20,6 +20,7 @@ import dev.pokedex.core.model.PokemonType.Water
 import dev.pokedex.core.model.WeatherBucket
 import dev.pokedex.core.model.WeatherReading
 import dev.pokedex.core.model.WeatherScene
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.MonthDay
@@ -32,17 +33,51 @@ data class Signals(
     val city: String?,
     val latitude: Double?,
     val weather: WeatherReading?,
+    /** ISO 3166 country code of the user's city, for national days. */
+    val country: String? = null,
 )
 
 enum class Season(val label: String) { Spring("spring"), Summer("summer"), Autumn("autumn"), Winter("winter") }
 
 enum class TimeOfDay(val phrase: String) { Morning("this morning"), Day("today"), Evening("this evening"), Night("tonight") }
 
-/** Bundled special days (plan, section 4). National days and religious festivals are open decisions. */
-enum class SpecialDay(val label: String, val day: MonthDay, val types: Set<PokemonType>, val speciesId: Int? = null) {
-    PokemonDay("Pokémon Day", MonthDay.of(2, 27), setOf(Electric), speciesId = 25),
-    Halloween("Halloween", MonthDay.of(10, 31), setOf(Ghost)),
-    NewYearsEve("New Year's Eve", MonthDay.of(12, 31), setOf(Fire)),
+/** Fireworks and celebration: what national days favour. A design choice, first draft. */
+private val Celebration = setOf(Fire, Fairy)
+
+/**
+ * Bundled special days (plan, section 4). National days apply only in their country; each date
+ * was checked against an official source on 1 October 2026 (see the plan). Religious festivals
+ * are an open decision.
+ */
+enum class SpecialDay(
+    val label: String,
+    val types: Set<PokemonType>,
+    private val fixed: MonthDay? = null,
+    val speciesId: Int? = null,
+    val country: String? = null,
+) {
+    PokemonDay("Pokémon Day", setOf(Electric), MonthDay.of(2, 27), speciesId = 25),
+    Halloween("Halloween", setOf(Ghost), MonthDay.of(10, 31)),
+    NewYearsEve("New Year's Eve", setOf(Fire), MonthDay.of(12, 31)),
+    GermanUnityDay("German Unity Day", Celebration, MonthDay.of(10, 3), country = "DE"),
+    BastilleDay("Bastille Day", Celebration, MonthDay.of(7, 14), country = "FR"),
+    IndependenceDayUs("Independence Day", Celebration, MonthDay.of(7, 4), country = "US"),
+
+    /** 27 April, or the Saturday before when the 27th is a Sunday. */
+    KingsDay("King's Day", Celebration, country = "NL"),
+    ;
+
+    fun isOn(date: LocalDate): Boolean = when (this) {
+        KingsDay -> date == LocalDate.of(date.year, 4, 27).let { if (it.dayOfWeek == DayOfWeek.SUNDAY) it.minusDays(1) else it }
+        else -> fixed == MonthDay.from(date)
+    }
+
+    companion object {
+        /** Days for everyone come first, then the user's country's. */
+        fun on(date: LocalDate, country: String?): SpecialDay? =
+            entries.firstOrNull { it.country == null && it.isOn(date) }
+                ?: entries.firstOrNull { it.country != null && it.country.equals(country, ignoreCase = true) && it.isOn(date) }
+    }
 }
 
 /** The engine's answer: who, why, and a hint that mentions only the weather. */
@@ -142,7 +177,7 @@ object ContextEngine {
         }
     }
 
-    fun specialDay(date: LocalDate): SpecialDay? = SpecialDay.entries.firstOrNull { it.day == MonthDay.from(date) }
+    fun specialDay(date: LocalDate, country: String? = null): SpecialDay? = SpecialDay.on(date, country)
 
     /** Today's sky, for the background: current conditions, or the time of day without weather. */
     fun scene(signals: Signals): WeatherScene {
@@ -172,7 +207,7 @@ object ContextEngine {
         val kind = signals.weather?.let(::weatherKind)
         val season = season(signals.date, signals.latitude)
         val timeOfDay = timeOfDay(signals.time, signals.weather)
-        val special = specialDay(signals.date)
+        val special = specialDay(signals.date, signals.country)
         val favouredByWeather = kind?.let { weatherTypes[it] }.orEmpty()
         val moments = kind?.let { legendaryMoments[it] }.orEmpty()
 

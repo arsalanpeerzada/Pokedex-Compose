@@ -167,7 +167,7 @@ private class FakePreferences : UserPreferencesRepository {
     override suspend fun setCity(city: String?) { state.value = state.value.copy(city = city) }
     override suspend fun completeOnboarding() { state.value = state.value.copy(onboardingDone = true) }
     override suspend fun setReminder(enabled: Boolean) { state.value = state.value.copy(reminder = enabled, reminderAsked = true) }
-    override suspend fun setCityLocation(city: String, latitude: Double, longitude: Double) {
-        state.value = state.value.copy(cityLatitude = latitude, cityLongitude = longitude)
+    override suspend fun setCityLocation(city: String, latitude: Double, longitude: Double, country: String?) {
+        state.value = state.value.copy(cityLatitude = latitude, cityLongitude = longitude, cityCountry = country)
     }
 }

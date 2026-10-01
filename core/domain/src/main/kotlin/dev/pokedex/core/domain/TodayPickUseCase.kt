@@ -53,7 +53,7 @@ class TodayPickUseCase @Inject constructor(
         val day = date.toEpochDay()
         val city = weather.city()
         val reading = weather.current()
-        val signals = Signals(date, now.toLocalTime(), city?.name, city?.latitude, reading)
+        val signals = Signals(date, now.toLocalTime(), city?.name, city?.latitude, reading, city?.country)
 
         val saved = daily.get(day)
         val savedAnswer = saved?.let { s -> pokedex.firstOrNull { it.id == s.pokemonId } }

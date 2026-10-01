@@ -23,7 +23,7 @@ interface UserPreferencesRepository {
     suspend fun setReminder(enabled: Boolean)
 
     /** Saves where [city] is, if it's still the chosen city. Coordinates are rounded to about 1 km. */
-    suspend fun setCityLocation(city: String, latitude: Double, longitude: Double)
+    suspend fun setCityLocation(city: String, latitude: Double, longitude: Double, country: String?)
 }
 
 @Singleton
@@ -40,6 +40,7 @@ class DataStoreUserPreferencesRepository @Inject constructor(
             city = prefs[CITY],
             cityLatitude = prefs[CITY_LATITUDE],
             cityLongitude = prefs[CITY_LONGITUDE],
+            cityCountry = prefs[CITY_COUNTRY],
             reminder = prefs[REMINDER] ?: false,
             reminderAsked = prefs[REMINDER_ASKED] ?: false,
         )
@@ -65,14 +66,16 @@ class DataStoreUserPreferencesRepository @Inject constructor(
             // A new city needs a new lookup.
             prefs.remove(CITY_LATITUDE)
             prefs.remove(CITY_LONGITUDE)
+            prefs.remove(CITY_COUNTRY)
         }
     }
 
-    override suspend fun setCityLocation(city: String, latitude: Double, longitude: Double) {
+    override suspend fun setCityLocation(city: String, latitude: Double, longitude: Double, country: String?) {
         store.edit { prefs ->
             if (prefs[CITY] != city) return@edit
             prefs[CITY_LATITUDE] = roundToKm(latitude)
             prefs[CITY_LONGITUDE] = roundToKm(longitude)
+            if (country.isNullOrBlank()) prefs.remove(CITY_COUNTRY) else prefs[CITY_COUNTRY] = country.uppercase()
         }
     }
 
@@ -98,6 +101,7 @@ class DataStoreUserPreferencesRepository @Inject constructor(
         val CITY = stringPreferencesKey("city")
         val CITY_LATITUDE = doublePreferencesKey("city_latitude")
         val CITY_LONGITUDE = doublePreferencesKey("city_longitude")
+        val CITY_COUNTRY = stringPreferencesKey("city_country")
         val REMINDER = booleanPreferencesKey("reminder")
         val REMINDER_ASKED = booleanPreferencesKey("reminder_asked")
     }

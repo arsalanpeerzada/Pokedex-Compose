@@ -73,7 +73,7 @@ Quality bars (measured, not claimed):
 
 | Signal | Source | Notes |
 |---|---|---|
-| Special days | Bundled calendar | Pokémon Day (27 February), Halloween (Ghost), New Year's Eve (Fire, for the fireworks), plus national days per country. Religious festivals: open decision |
+| Special days | Bundled calendar | Pokémon Day (27 February), Halloween (Ghost), New Year's Eve (Fire, for the fireworks), plus national days per country. Religious festivals: open decision. National days built on 1 October 2026, each checked against an official source and favouring Fire and Fairy ("celebration", first draft): Germany 3 October ([bundesregierung.de](https://www.bundesregierung.de/breg-de/service/tag-der-deutschen-einheit-442686)), France 14 July ([elysee.fr](https://www.elysee.fr/en/french-presidency/bastille-day-14-july)), the Netherlands 27 April, or 26 April when the 27th is a Sunday ([koninklijkhuis.nl](https://www.koninklijkhuis.nl/onderwerpen/activiteiten-en-werkzaamheden/koningsdag)), and the United States 4 July ([usa.gov](https://www.usa.gov/holidays)). Pakistan is not added yet: no official source could be read that day |
 | Season | Date plus hemisphere from latitude | Works in both hemispheres |
 | Time of day | Google Weather `isDaytime`, sunrise and sunset | Dawn, day, dusk, night |
 | Weather | Google Weather current conditions and daily forecast | 40 condition types grouped into the buckets below |

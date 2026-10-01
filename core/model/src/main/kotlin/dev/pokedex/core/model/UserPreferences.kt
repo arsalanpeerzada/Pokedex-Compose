@@ -16,6 +16,8 @@ data class UserPreferences(
     /** The city's position, rounded to two decimal places (about 1 km). Null until looked up. */
     val cityLatitude: Double? = null,
     val cityLongitude: Double? = null,
+    /** ISO 3166 country code from the same lookup, for national days. */
+    val cityCountry: String? = null,
     val reminder: Boolean = false,
     /** Whether Today has already offered the reminder, so it asks once. */
     val reminderAsked: Boolean = false,

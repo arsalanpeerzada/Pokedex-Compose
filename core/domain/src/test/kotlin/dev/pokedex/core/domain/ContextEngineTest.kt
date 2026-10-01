@@ -118,6 +118,38 @@ class ContextEngineTest {
     }
 
     @Test
+    fun `national days apply only in their country`() {
+        val unity = LocalDate.of(2026, 10, 3)
+        assertEquals(SpecialDay.GermanUnityDay, ContextEngine.specialDay(unity, "DE"))
+        assertEquals(SpecialDay.GermanUnityDay, ContextEngine.specialDay(unity, "de"))
+        assertEquals(null, ContextEngine.specialDay(unity, "GB"))
+        assertEquals(null, ContextEngine.specialDay(unity, null))
+        assertEquals(SpecialDay.BastilleDay, ContextEngine.specialDay(LocalDate.of(2026, 7, 14), "FR"))
+        assertEquals(SpecialDay.IndependenceDayUs, ContextEngine.specialDay(LocalDate.of(2026, 7, 4), "US"))
+    }
+
+    @Test
+    fun `king's day moves to Saturday when 27 April is a Sunday`() {
+        // 27 April 2025 was a Sunday; 27 April 2026 is a Monday.
+        assertEquals(SpecialDay.KingsDay, ContextEngine.specialDay(LocalDate.of(2025, 4, 26), "NL"))
+        assertEquals(null, ContextEngine.specialDay(LocalDate.of(2025, 4, 27), "NL"))
+        assertEquals(SpecialDay.KingsDay, ContextEngine.specialDay(LocalDate.of(2026, 4, 27), "NL"))
+    }
+
+    @Test
+    fun `a national day is named in the hint and favours celebration types`() {
+        val unity = LocalDate.of(2026, 10, 3)
+        val pick = ContextEngine.pick(pokedex, signals(date = unity, city = "Berlin").copy(country = "DE"))!!
+        assertTrue(pick.hint.endsWith("It's German Unity Day."))
+        // Same day, 300 different cities (so 300 different seeds).
+        val hits = (1..300).count { i ->
+            val p = ContextEngine.pick(pokedex, signals(date = unity, city = "City $i", lat = 52.5).copy(country = "DE"))!!
+            p.answer.types.any { it == PokemonType.Fire || it == PokemonType.Fairy }
+        }
+        assertTrue("Celebration types should be favoured, were $hits of 300", hits / 300.0 > 2 * 2 / 18.0)
+    }
+
+    @Test
     fun `hints mention the weather but never a type`() {
         val pick = ContextEngine.pick(pokedex, signals(weather = weather(WeatherBucket.Thunder, day = false), time = LocalTime.of(22, 0)))!!
         assertEquals("Stormy in Leeds tonight.", pick.hint)
