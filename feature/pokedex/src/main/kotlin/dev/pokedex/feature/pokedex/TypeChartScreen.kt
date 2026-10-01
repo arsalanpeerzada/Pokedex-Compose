@@ -1,6 +1,12 @@
 package dev.pokedex.feature.pokedex
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -29,6 +35,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -43,7 +50,9 @@ import dev.pokedex.core.designsystem.component.DexIconButton
 import dev.pokedex.core.designsystem.component.DexPreviews
 import dev.pokedex.core.designsystem.component.DexPrimaryButton
 import dev.pokedex.core.designsystem.component.DexTopBar
+import dev.pokedex.core.designsystem.component.FilterPill
 import dev.pokedex.core.designsystem.component.GlassCard
+import dev.pokedex.core.designsystem.component.TypeBadge
 import dev.pokedex.core.designsystem.icon.DexIcons
 import dev.pokedex.core.designsystem.theme.DexShape
 import dev.pokedex.core.designsystem.theme.DexTheme
@@ -85,10 +94,16 @@ private fun factorStyle(factor: Float): FactorStyle? = when {
 private val Cell = 36.dp
 private val Header = 64.dp
 
+/** Phones get two focused views; the full grid is there for anyone who wants it (plan, section 3). */
+private enum class ChartMode(val label: String) { Attack("Attack"), Defend("Defend"), Full("Full chart") }
+
 @Composable
 fun TypeChartScreen(chart: TypeChart?, onBack: () -> Unit, onRetry: () -> Unit, modifier: Modifier = Modifier) {
     val colors = DexTheme.colors
+    var mode by rememberSaveable { mutableStateOf(ChartMode.Attack) }
     var selected by rememberSaveable { mutableStateOf<PokemonType?>(null) }
+    var attacker by rememberSaveable { mutableStateOf(PokemonType.Fire) }
+    var defenders by rememberSaveable { mutableStateOf(listOf(PokemonType.Water)) }
     Column(modifier.fillMaxSize().background(colors.background)) {
         DexTopBar(title = "Type chart", navigation = { DexIconButton(DexIcons.Back, "Back", onBack) })
         when {
@@ -107,15 +122,101 @@ fun TypeChartScreen(chart: TypeChart?, onBack: () -> Unit, onRetry: () -> Unit, 
                     .padding(bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Legend(Modifier.padding(horizontal = 16.dp))
-                Text(
-                    "Rows attack, columns defend. Tap a type to highlight it.",
-                    style = DexTheme.type.bodyMedium,
-                    color = colors.textSecondary,
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                )
-                Grid(chart, selected, onSelect = { selected = if (selected == it) null else it })
+                Row(
+                    Modifier.padding(horizontal = 16.dp).selectableGroup(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    ChartMode.entries.forEach { m -> FilterPill(m.label, selected = mode == m, onClick = { mode = m }) }
+                }
+                AnimatedContent(targetState = mode, transitionSpec = { fadeIn(tween(220)) togetherWith fadeOut(tween(120)) }, label = "chartMode") { m ->
+                    when (m) {
+                        ChartMode.Attack -> AttackView(chart, attacker, onPick = { attacker = it })
+                        ChartMode.Defend -> DefendView(chart, defenders, onToggle = { type ->
+                            defenders = when {
+                                type in defenders && defenders.size > 1 -> defenders - type
+                                type in defenders -> defenders
+                                // Two types at most; a third replaces the oldest pick.
+                                defenders.size == 2 -> listOf(defenders[1], type)
+                                else -> defenders + type
+                            }
+                        })
+                        ChartMode.Full -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Legend(Modifier.padding(horizontal = 16.dp))
+                            Text(
+                                "Rows attack, columns defend. Tap a type to highlight it.",
+                                style = DexTheme.type.bodyMedium,
+                                color = colors.textSecondary,
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                            )
+                            Grid(chart, selected, onSelect = { selected = if (selected == it) null else it })
+                        }
+                    }
+                }
             }
+        }
+    }
+}
+
+/** One attacking type: what it hits hard, what shrugs it off, and what it can't touch. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun AttackView(chart: TypeChart, attacker: PokemonType, onPick: (PokemonType) -> Unit) {
+    Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        TypePicker("Attacking type", selected = setOf(attacker), multiSelect = false, onPick = onPick)
+        val factors = PokemonType.entries.associateWith { chart.factor(attacker, it) }
+        GlassCard {
+            Group("Super effective against", factors.filterValues { it >= 2f }.keys, "2×")
+            Group("Not very effective against", factors.filterValues { it > 0f && it < 1f }.keys, "½×")
+            Group("No effect on", factors.filterValues { it == 0f }.keys, "0×")
+        }
+    }
+}
+
+/** One or two defending types, as on a dual-type Pokémon: weaknesses multiply. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun DefendView(chart: TypeChart, defenders: List<PokemonType>, onToggle: (PokemonType) -> Unit) {
+    Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        TypePicker("Defending types (up to two)", selected = defenders.toSet(), multiSelect = true, onPick = onToggle)
+        val defending = chart.defending(defenders)
+        GlassCard {
+            Group("4× weak to", defending.filterValues { it >= 4f }.keys, "4×")
+            Group("2× weak to", defending.filterValues { it >= 2f && it < 4f }.keys, "2×")
+            Group("Resists", defending.filterValues { it > 0.25f && it < 1f }.keys, "½×")
+            Group("Strongly resists", defending.filterValues { it > 0f && it <= 0.25f }.keys, "¼×")
+            Group("Immune to", defending.filterValues { it == 0f }.keys, "0×")
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun TypePicker(title: String, selected: Set<PokemonType>, multiSelect: Boolean, onPick: (PokemonType) -> Unit) {
+    Text(title, style = DexTheme.type.titleMedium, color = DexTheme.colors.text, modifier = Modifier.semantics { heading() })
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        PokemonType.entries.forEach { type ->
+            val c = type.colour()
+            FilterPill(
+                type.displayName,
+                selected = type in selected,
+                onClick = { onPick(type) },
+                multiSelect = multiSelect,
+                selectedContainer = c.container,
+                selectedContent = c.content,
+            )
+        }
+    }
+}
+
+/** A heading and its types; empty groups are left out rather than shown as "None". */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun Group(title: String, types: Collection<PokemonType>, factor: String) {
+    if (types.isEmpty()) return
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("$title ($factor)", style = DexTheme.type.titleMedium, color = DexTheme.colors.text, modifier = Modifier.semantics { heading() })
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            types.forEach { TypeBadge(it) }
         }
     }
 }
