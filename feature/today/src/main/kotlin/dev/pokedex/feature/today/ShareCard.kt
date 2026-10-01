@@ -20,6 +20,7 @@ import androidx.core.content.FileProvider
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.scale
+import androidx.core.graphics.withTranslation
 import coil3.SingletonImageLoader
 import coil3.request.ImageRequest
 import coil3.request.SuccessResult
@@ -121,10 +122,7 @@ object ShareCard {
                 .setMaxLines(3)
                 .setEllipsize(TextUtils.TruncateAt.END)
                 .build()
-            canvas.save()
-            canvas.translate(box.left + 36, box.centerY() - layout.height / 2f)
-            layout.draw(canvas)
-            canvas.restore()
+            canvas.withTranslation(box.left + 36, box.centerY() - layout.height / 2f) { layout.draw(this) }
         }
 
         text(canvas, "Pokedex  ·  unofficial fan app", body, 30f, 0x99FFFFFF.toInt(), y = 1300f)

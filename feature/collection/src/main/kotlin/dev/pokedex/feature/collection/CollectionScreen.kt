@@ -110,7 +110,8 @@ fun CollectionScreen(
             DexIconButton(DexIcons.Settings, "Settings", onSettings)
         }
         LazyVerticalGrid(
-            columns = GridCells.Fixed(4),
+            // Four stickers a row on phones, more as the window grows.
+            columns = GridCells.Adaptive(minSize = 80.dp),
             modifier = Modifier.weight(1f),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = contentPadding.calculateBottomPadding() + 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),

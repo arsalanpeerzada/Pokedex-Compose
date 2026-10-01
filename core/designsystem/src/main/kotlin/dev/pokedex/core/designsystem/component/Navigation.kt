@@ -10,7 +10,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
@@ -67,6 +71,57 @@ fun DexNavigationBar(items: List<NavItem>, selectedIndex: Int, onSelect: (Int) -
                     Modifier
                         .width(pillWidth)
                         .height(32.dp)
+                        .clip(DexShape.large)
+                        .background(pill),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(item.icon, contentDescription = null, tint = tint, modifier = Modifier.size(24.dp))
+                }
+                Text(
+                    item.label,
+                    style = if (selected) DexTheme.type.labelMedium else DexTheme.type.labelSmall,
+                    color = if (selected) colors.text else colors.textSecondary,
+                )
+            }
+        }
+    }
+}
+
+/** The same navigation as a side rail, for tablets, foldables and landscape. */
+@Composable
+fun DexNavigationRail(items: List<NavItem>, selectedIndex: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
+    val colors = DexTheme.colors
+    Column(
+        modifier = modifier
+            .fillMaxHeight()
+            .width(96.dp)
+            .background(colors.navBackground)
+            .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Vertical + WindowInsetsSides.Start))
+            .padding(vertical = 24.dp)
+            .selectableGroup(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterVertically),
+    ) {
+        items.forEachIndexed { index, item ->
+            val selected = index == selectedIndex
+            val pillHeight by animateDpAsState(
+                targetValue = if (selected) 40.dp else 32.dp,
+                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow),
+                label = "railPill",
+            )
+            val pill by animateColorAsState(if (selected) colors.navIndicator else colors.navIndicator.copy(alpha = 0f), label = "railPillColour")
+            val tint by animateColorAsState(if (selected) colors.primary else colors.textSecondary, label = "railTint")
+            Column(
+                modifier = Modifier
+                    .width(80.dp)
+                    .selectable(selected = selected, onClick = { onSelect(index) }, role = Role.Tab),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Box(
+                    Modifier
+                        .width(56.dp)
+                        .height(pillHeight)
                         .clip(DexShape.large)
                         .background(pill),
                     contentAlignment = Alignment.Center,

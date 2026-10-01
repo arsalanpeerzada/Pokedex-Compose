@@ -325,7 +325,20 @@ Two-week sprints, each ending with a Substack issue.
   - **A draft privacy policy** is in `docs/privacy-policy.md`, linked from Settings. It needs review before publishing.
   - To confirm with Google's terms: the day's saved "Why today?" line includes the weather description, which is stored on the phone.
   - Needs a device or emulator: Baseline Profiles and Macrobenchmark, screenshot tests, a TalkBack walk-through, and checking the minified release at runtime.
-- Forms follow the no-regions rule. A form whose name includes a region gets a neutral label, such as "Vulpix, alternate form". Other forms read naturally, for example "Mega Charizard X" or "Rotom (Heat)".
+- Forms follow the no-regions rule.
+
+**Day 3 (1 October 2026), branch `day-3`.** `day-2` was fast-forwarded into `main` first.
+- **Share card:** after the reveal, a 1080 x 1350 image with the day's sky, the artwork, the name, the number and "Why today?".
+- **National days:** Germany, France, the Netherlands and the United States, using the country from the city lookup (sources in section 4). Pakistan is waiting on an official source.
+- **Detail:**
+  - A shiny toggle, using PokeAPI's shiny official artwork.
+  - A size comparison against a 1.7 m person, which is a stated assumption, not an average.
+- **Units:** metric or imperial for height, weight and temperature.
+- **Adaptive layouts:**
+  - From 600dp wide, a navigation rail replaces the bottom bar.
+  - Lists show their detail alongside where there's room, via Material 3 adaptive's list-detail scene strategy 1.3.0.
+  - The grids add columns as the window grows.
+  - Shared-element transitions are phone-only, because side by side the same artwork can be on screen twice. A form whose name includes a region gets a neutral label, such as "Vulpix, alternate form". Other forms read naturally, for example "Mega Charizard X" or "Rotom (Heat)".
 
 ## 9. Distribution
 

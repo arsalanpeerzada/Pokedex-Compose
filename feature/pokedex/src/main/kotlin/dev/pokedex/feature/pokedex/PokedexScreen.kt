@@ -152,7 +152,8 @@ fun PokedexScreen(
             DexIconButton(DexIcons.Settings, "Settings", actions.onSettings)
         }
         LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
+            // Two columns on phones, more as the window grows.
+            columns = GridCells.Adaptive(minSize = 168.dp),
             modifier = Modifier.weight(1f),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = contentPadding.calculateBottomPadding() + 16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
