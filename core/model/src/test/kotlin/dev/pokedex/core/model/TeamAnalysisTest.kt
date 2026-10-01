@@ -58,6 +58,31 @@ class TeamAnalysisTest {
     }
 
     @Test
+    fun `suggestions patch shared weaknesses first and skip legendaries`() {
+        val team = listOf(p(1, Water), p(2, Water, Flying))
+        val pokedex = listOf(
+            p(10, Ground), // immune to Electric: covers the shared weakness
+            p(11, Grass), // resists the shared Grass weakness and hits Water
+            p(12, Ground).copy(isLegendary = true),
+            p(13, Water), // already weak to Electric and Grass: makes things worse
+            p(1, Water), // already in the team
+        )
+        val suggestions = TeamSuggestions.suggest(team, pokedex, chart)
+        assertEquals(listOf(11, 10), suggestions.map { it.pokemon.id })
+        val ground = suggestions.first { it.pokemon.id == 10 }
+        assertEquals(listOf(Electric), ground.covers)
+        assertEquals("Resists Electric", ground.reason)
+        assertEquals("Resists Grass · hits Water", suggestions.first().reason)
+    }
+
+    @Test
+    fun `no suggestions for an empty or full team`() {
+        val pokedex = listOf(p(10, Ground))
+        assertTrue(TeamSuggestions.suggest(emptyList(), pokedex, chart).isEmpty())
+        assertTrue(TeamSuggestions.suggest((1..6).map { p(it, Water) }, pokedex, chart).isEmpty())
+    }
+
+    @Test
     fun `members without types yet are ignored`() {
         val analysis = TeamAnalysis.of(listOf(Pokemon(9, "Unknown", emptyList())), chart)
         assertTrue(analysis.weakCounts.isEmpty())

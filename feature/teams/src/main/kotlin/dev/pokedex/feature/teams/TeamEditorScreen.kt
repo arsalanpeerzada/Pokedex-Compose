@@ -81,6 +81,8 @@ import dev.pokedex.core.model.PokemonType
 import dev.pokedex.core.model.TEAM_SIZE
 import dev.pokedex.core.model.Team
 import dev.pokedex.core.model.TeamAnalysis
+import dev.pokedex.core.model.TeamSuggestion
+import dev.pokedex.core.model.TeamSuggestions
 import dev.pokedex.core.model.TypeChart
 
 @Composable
@@ -96,8 +98,10 @@ fun TeamEditorRoute(teamId: Long, onBack: () -> Unit, onOpenPokemon: (Int) -> Un
         team = team,
         analysis = state.analysis,
         pokedex = state.pokedex,
+        suggestions = state.suggestions,
         onBack = onBack,
         onSetMember = viewModel::setMember,
+        onAddSuggestion = viewModel::addSuggestion,
         onRename = viewModel::rename,
         onDelete = viewModel::delete,
         onOpenPokemon = onOpenPokemon,
@@ -109,8 +113,10 @@ fun TeamEditorScreen(
     team: Team,
     analysis: TeamAnalysis?,
     pokedex: List<Pokemon>,
+    suggestions: List<TeamSuggestion>,
     onBack: () -> Unit,
     onSetMember: (slot: Int, pokemonId: Int?) -> Unit,
+    onAddSuggestion: (Int) -> Unit,
     onRename: (String) -> Unit,
     onDelete: () -> Unit,
     onOpenPokemon: (Int) -> Unit,
@@ -151,6 +157,7 @@ fun TeamEditorScreen(
                 }
             }
             AnalysisCard(team, analysis)
+            if (suggestions.isNotEmpty()) SuggestionsCard(suggestions, onAddSuggestion, onOpenPokemon)
         }
     }
 
@@ -271,6 +278,34 @@ private fun AnalysisCard(team: Team, analysis: TeamAnalysis?) {
     }
 }
 
+/** Pokémon that would patch the team's holes, each with a one-line reason and a one-tap add. */
+@Composable
+private fun SuggestionsCard(suggestions: List<TeamSuggestion>, onAdd: (Int) -> Unit, onOpen: (Int) -> Unit) {
+    val colors = DexTheme.colors
+    GlassCard(modifier = Modifier.animateContentSize()) {
+        Text("Suggestions", style = DexTheme.type.titleLarge, color = colors.text, modifier = Modifier.semantics { heading() })
+        suggestions.forEach { s ->
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 56.dp)
+                    .clip(DexShape.large)
+                    .clickable(role = Role.Button, onClickLabel = "Open ${s.pokemon.name}") { onOpen(s.pokemon.id) },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                PokemonAvatar(s.pokemon, 40.dp)
+                Column(Modifier.weight(1f)) {
+                    Text(s.pokemon.name, style = DexTheme.type.titleMedium, color = colors.text)
+                    Text(s.reason, style = DexTheme.type.labelMedium, color = colors.textSecondary)
+                }
+                DexIconButton(DexIcons.Plus, "Add ${s.pokemon.name} to the team", { onAdd(s.pokemon.id) })
+            }
+        }
+        Text("Legendary and mythical Pokémon aren't suggested.", style = DexTheme.type.labelSmall, color = colors.textSecondary)
+    }
+}
+
 @Composable
 private fun CountBadge(type: PokemonType, label: String) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.semantics(mergeDescendants = true) {}) {
@@ -354,6 +389,9 @@ private fun TeamEditorPreview() {
         ),
     )
     DexTheme {
-        TeamEditorScreen(team, TeamAnalysis.of(team.filled, chart), emptyList(), {}, { _, _ -> }, {}, {}, {})
+        TeamEditorScreen(
+            team, TeamAnalysis.of(team.filled, chart), emptyList(), TeamSuggestions.suggest(team.filled, SampleData.generationOne, chart),
+            onBack = {}, onSetMember = { _, _ -> }, onAddSuggestion = {}, onRename = {}, onDelete = {}, onOpenPokemon = {},
+        )
     }
 }

@@ -11,8 +11,12 @@ import dev.pokedex.core.data.TeamRepository
 import dev.pokedex.core.model.Pokemon
 import dev.pokedex.core.model.Team
 import dev.pokedex.core.model.TeamAnalysis
+import dev.pokedex.core.model.TeamSuggestion
+import dev.pokedex.core.model.TeamSuggestions
 import dev.pokedex.core.model.TypeChart
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
@@ -45,6 +49,7 @@ data class TeamEditorUiState(
     val missing: Boolean = false,
     val analysis: TeamAnalysis? = null,
     val pokedex: List<Pokemon> = emptyList(),
+    val suggestions: List<TeamSuggestion> = emptyList(),
 )
 
 @HiltViewModel(assistedFactory = TeamEditorViewModel.Factory::class)
@@ -65,11 +70,21 @@ class TeamEditorViewModel @AssistedInject constructor(
             missing = team == null && loaded,
             analysis = team?.let { if (chart.isEmpty) null else TeamAnalysis.of(it.filled, chart) },
             pokedex = pokedex,
+            suggestions = team?.let { TeamSuggestions.suggest(it.filled, pokedex, chart) }.orEmpty(),
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TeamEditorUiState())
+    }
+        // Suggestions scan the whole Pokédex, so keep that off the main thread.
+        .flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TeamEditorUiState())
 
     fun setMember(slot: Int, pokemonId: Int?) {
         viewModelScope.launch { teams.setMember(teamId, slot, pokemonId) }
+    }
+
+    /** Puts a suggested Pokémon in the first empty slot. */
+    fun addSuggestion(pokemonId: Int) {
+        val slot = state.value.team?.members?.indexOfFirst { it == null } ?: return
+        if (slot >= 0) setMember(slot, pokemonId)
     }
 
     fun rename(name: String) {
