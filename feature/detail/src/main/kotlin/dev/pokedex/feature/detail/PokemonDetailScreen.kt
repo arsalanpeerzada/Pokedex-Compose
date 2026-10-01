@@ -91,7 +91,7 @@ import kotlinx.coroutines.delay
 private val Tabs = listOf("About", "Stats", "Evolution", "Matchups", "Forms")
 
 @Composable
-fun PokemonDetailRoute(pokemonId: Int, onBack: () -> Unit, onOpenPokemon: (Int) -> Unit) {
+fun PokemonDetailRoute(pokemonId: Int, onBack: () -> Unit, onOpenPokemon: (Int) -> Unit, onCompare: (Int) -> Unit = {}) {
     val viewModel = hiltViewModel<DetailViewModel, DetailViewModel.Factory>(
         key = "detail-$pokemonId",
         creationCallback = { it.create(pokemonId) },
@@ -115,6 +115,7 @@ fun PokemonDetailRoute(pokemonId: Int, onBack: () -> Unit, onOpenPokemon: (Int) 
             onAddToNewTeam = viewModel::addToNewTeam,
             onBack = onBack,
             onOpenPokemon = onOpenPokemon,
+            onCompare = { onCompare(pokemonId) },
             onToggleCaught = viewModel::toggleCaught,
             onFavourite = viewModel::toggleFavourite,
             onShare = {
@@ -152,6 +153,7 @@ fun PokemonDetailScreen(
     onBack: () -> Unit,
     onOpenPokemon: (Int) -> Unit,
     onToggleCaught: () -> Unit,
+    onCompare: () -> Unit = {},
     onFavourite: () -> Unit,
     onShare: () -> Unit,
     onPlayCry: () -> Unit,
@@ -183,6 +185,7 @@ fun PokemonDetailScreen(
             contentColor = content,
             navigation = { DexIconButton(DexIcons.Back, "Back", onBack, tint = content, glass = true) },
         ) {
+            DexIconButton(DexIcons.Compare, "Compare with another Pokémon", onCompare, tint = content, glass = true)
             FavouriteButton(favourite, onFavourite, content)
             DexIconButton(DexIcons.Share, "Share", onShare, tint = content, glass = true)
         }

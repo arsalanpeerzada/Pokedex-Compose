@@ -19,6 +19,9 @@ object DexIcons {
     val Filter by lazy { stroke("Filter", "M4 5h16l-6 7v6l-4 2v-8z") }
     val TypeChart by lazy { stroke("TypeChart", roundedRect(4f, 4f, 16f, 16f, 2f), "M4 10h16M10 4v16") }
     val Sort by lazy { stroke("Sort", "M7 4v16M4 17l3 3 3-3M17 20V4M14 7l3-3 3 3") }
+
+    /** Two cards facing each other, with arrows between: "compare". */
+    val Compare by lazy { stroke("Compare", roundedRect(3f, 5f, 7f, 14f, 1.5f), roundedRect(14f, 5f, 7f, 14f, 1.5f), "M10.5 9.5h3M12.5 8l1.5 1.5L12.5 11M13.5 14.5h-3M11.5 13L10 14.5l1.5 1.5") }
     val Heart by lazy { stroke("Heart", "M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z") }
     val Share by lazy { stroke("Share", circle(6f, 12f, 2.5f), circle(18f, 6f, 2.5f), circle(18f, 18f, 2.5f), "M8.3 10.9l7.4-3.8M8.3 13.1l7.4 3.8") }
     val Check by lazy { stroke("Check", "M5 12.5l4.5 4.5L19 7") }

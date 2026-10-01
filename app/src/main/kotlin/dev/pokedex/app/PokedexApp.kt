@@ -42,6 +42,7 @@ import dev.pokedex.core.designsystem.motion.LocalSharedTransitionScope
 import dev.pokedex.core.designsystem.theme.DexTheme
 import dev.pokedex.core.designsystem.theme.brandBrush
 import dev.pokedex.feature.collection.CollectionRoute
+import dev.pokedex.feature.detail.CompareRoute
 import dev.pokedex.feature.detail.PokemonDetailRoute
 import dev.pokedex.feature.pokedex.PokedexRoute
 import dev.pokedex.feature.pokedex.TypeChartRoute
@@ -59,6 +60,7 @@ data class DetailKey(val pokemonId: Int) : Destination
 data object TypeChartKey : Destination
 data object SettingsKey : Destination
 data class TeamKey(val teamId: Long) : Destination
+data class CompareKey(val firstId: Int) : Destination
 
 private val TopLevel = listOf(TodayKey, PokedexKey, TeamsKey, CollectionKey)
 private val NavItems = listOf(
@@ -172,8 +174,12 @@ fun PokedexApp() {
                                             pokemonId = key.pokemonId,
                                             onBack = { backStack.removeLastOrNull() },
                                             onOpenPokemon = openDetail,
+                                            onCompare = { backStack.add(CompareKey(it)) },
                                         )
                                     }
+                                }
+                                entry<CompareKey> { key ->
+                                    CompareRoute(firstId = key.firstId, onBack = { backStack.removeLastOrNull() })
                                 }
                             },
                         )
