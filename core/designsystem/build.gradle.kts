@@ -1,17 +1,10 @@
 plugins {
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.pokedex.android.library)
+    alias(libs.plugins.pokedex.android.compose)
 }
 
 android {
     namespace = "dev.pokedex.core.designsystem"
-    compileSdk = 37
-    defaultConfig { minSdk = 26 }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-    buildFeatures { compose = true }
 }
 
 dependencies {

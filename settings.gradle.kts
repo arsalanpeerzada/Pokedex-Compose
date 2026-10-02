@@ -1,4 +1,6 @@
 pluginManagement {
+    // Convention plugins: shared module set-up (SDK levels, Java, Compose, Hilt, tests).
+    includeBuild("build-logic")
     repositories {
         google()
         mavenCentral()
