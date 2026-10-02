@@ -97,6 +97,17 @@ class OfflineFirstPokemonRepositoryTest {
     }
 
     @Test
+    fun `download all fetches what's missing and reports progress`() = runTest {
+        repository.refreshIndex()
+        assertEquals(DownloadProgress(complete = 0, total = 2), repository.downloadProgress().first())
+        // Bulbasaur succeeds; Mr Mime (122) has no mock response, so it stays missing for next time.
+        val missing = repository.downloadAll()
+        assertEquals(1, missing)
+        assertEquals(DownloadProgress(complete = 1, total = 2), repository.downloadProgress().first())
+        assertEquals(1, requests.count { it == "pokemon/1" })
+    }
+
+    @Test
     fun `offline index reports failure without crashing`() = runTest {
         offline = true
         assertTrue(repository.refreshIndex().isFailure)
@@ -110,8 +121,12 @@ private class FakePokemonDao : PokemonDao {
     override fun observeAll(): Flow<List<PokemonEntity>> = rows.map { it.values.sortedBy(PokemonEntity::id) }
     override fun observe(id: Int): Flow<PokemonEntity?> = rows.map { it[id] }
     override suspend fun count() = rows.value.size
-    override suspend fun needsDetails(id: Int) = rows.value[id]?.let { !it.detailsLoaded || it.hp == null || it.forms == null }
+    override suspend fun needsDetails(id: Int) = rows.value[id]?.let { !it.detailsLoaded || it.hp == null || it.forms == null || it.storyEntries == null }
     override suspend fun countWithoutTypes() = rows.value.values.count { it.types.isEmpty() }
+    private fun PokemonEntity.complete() = detailsLoaded && hp != null && forms != null && storyEntries != null
+    override fun observeCompleteCount(): Flow<Int> = rows.map { it.values.count { row -> row.complete() } }
+    override fun observeCount(): Flow<Int> = rows.map { it.size }
+    override suspend fun idsNeedingDetails() = rows.value.values.filterNot { it.complete() }.map { it.id }.sorted()
     override suspend fun insertIndex(items: List<PokemonEntity>) {
         rows.value = rows.value + items.filter { it.id !in rows.value }.associateBy { it.id }
     }

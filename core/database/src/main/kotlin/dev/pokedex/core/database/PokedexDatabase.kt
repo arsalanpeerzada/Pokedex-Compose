@@ -124,6 +124,16 @@ interface PokemonDao {
     @Query("SELECT COUNT(*) FROM pokemon WHERE types = ''")
     suspend fun countWithoutTypes(): Int
 
+    /** Pokémon with everything downloaded: the same test as [needsDetails], inverted. */
+    @Query("SELECT COUNT(*) FROM pokemon WHERE detailsLoaded = 1 AND hp IS NOT NULL AND forms IS NOT NULL AND storyEntries IS NOT NULL")
+    fun observeCompleteCount(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM pokemon")
+    fun observeCount(): Flow<Int>
+
+    @Query("SELECT id FROM pokemon WHERE detailsLoaded = 0 OR hp IS NULL OR forms IS NULL OR storyEntries IS NULL ORDER BY id")
+    suspend fun idsNeedingDetails(): List<Int>
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertIndex(items: List<PokemonEntity>)
 

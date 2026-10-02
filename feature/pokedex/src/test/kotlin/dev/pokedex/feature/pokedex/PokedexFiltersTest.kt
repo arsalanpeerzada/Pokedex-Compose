@@ -46,6 +46,18 @@ class PokedexFiltersTest {
     }
 
     @Test
+    fun `legendary and mythical match either when both are on`() {
+        val mew = Pokemon(151, "Mew", listOf(dev.pokedex.core.model.PokemonType.Psychic), isMythical = true)
+        val zapdos = Pokemon(145, "Zapdos", listOf(Electric, Flying), isLegendary = true)
+        val list = all + listOf(zapdos, mew)
+        fun ids(f: PokedexFilters) = applyFilters(list, emptyMap(), f, "").map { it.id }
+        assertEquals(listOf(145), ids(PokedexFilters(legendaryOnly = true)))
+        assertEquals(listOf(151), ids(PokedexFilters(mythicalOnly = true)))
+        assertEquals(listOf(145, 151), ids(PokedexFilters(legendaryOnly = true, mythicalOnly = true)))
+        assertEquals(2, PokedexFilters(legendaryOnly = true, mythicalOnly = true).sheetCount)
+    }
+
+    @Test
     fun `search matches names and numbers`() {
         assertEquals(listOf(25), ids(PokedexFilters(), query = "pika"))
         assertEquals(listOf(25), ids(PokedexFilters(), query = "25"))

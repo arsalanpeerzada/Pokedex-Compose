@@ -27,6 +27,7 @@ include(
     ":core:designsystem",
     ":core:weather",
     ":core:domain",
+    ":core:sync",
     ":feature:today",
     ":feature:pokedex",
     ":feature:detail",

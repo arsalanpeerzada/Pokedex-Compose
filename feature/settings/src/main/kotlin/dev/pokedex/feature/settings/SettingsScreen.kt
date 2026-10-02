@@ -31,8 +31,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
@@ -41,10 +43,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.pokedex.core.data.DownloadProgress
+import dev.pokedex.core.data.PokemonRepository
 import dev.pokedex.core.data.UserPreferencesRepository
 import dev.pokedex.core.designsystem.component.DexGlassButton
 import dev.pokedex.core.designsystem.component.DexIconButton
 import dev.pokedex.core.designsystem.component.DexPreviews
+import dev.pokedex.core.designsystem.component.DexPrimaryButton
+import dev.pokedex.core.designsystem.component.DexProgressBar
 import dev.pokedex.core.designsystem.component.DexSwitchRow
 import dev.pokedex.core.designsystem.component.DexTextField
 import dev.pokedex.core.designsystem.component.DexTopBar
@@ -56,14 +62,20 @@ import dev.pokedex.core.designsystem.theme.DexTheme
 import dev.pokedex.core.model.ThemeMode
 import dev.pokedex.core.model.Units
 import dev.pokedex.core.model.UserPreferences
+import dev.pokedex.core.sync.OfflineDownload
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class SettingsViewModel @Inject constructor(private val repository: UserPreferencesRepository) : ViewModel() {
+class SettingsViewModel @Inject constructor(
+    private val repository: UserPreferencesRepository,
+    pokemon: PokemonRepository,
+    private val download: OfflineDownload,
+) : ViewModel() {
     val preferences: StateFlow<UserPreferences> = repository.preferences
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UserPreferences())
 
@@ -73,14 +85,27 @@ class SettingsViewModel @Inject constructor(private val repository: UserPreferen
     fun setCrashReports(enabled: Boolean) = viewModelScope.launch { repository.setCrashReports(enabled) }
     fun setCity(city: String) = viewModelScope.launch { repository.setCity(city) }
     fun setReminder(enabled: Boolean) = viewModelScope.launch { repository.setReminder(enabled) }
+
+    val offline: StateFlow<OfflineState> = combine(pokemon.downloadProgress(), download.active) { progress, active -> OfflineState(progress, active) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), OfflineState())
+
+    fun startDownload(wifiOnly: Boolean) = download.start(wifiOnly)
+    fun stopDownload() = download.cancel()
 }
+
+/** The optional full download: how far it's got, and whether it's queued or running. */
+data class OfflineState(val progress: DownloadProgress = DownloadProgress(0, 0), val active: Boolean = false)
 
 @Composable
 fun SettingsRoute(onBack: () -> Unit, viewModel: SettingsViewModel = hiltViewModel()) {
     val prefs by viewModel.preferences.collectAsStateWithLifecycle()
+    val offline by viewModel.offline.collectAsStateWithLifecycle()
     val context = LocalContext.current
     SettingsScreen(
         preferences = prefs,
+        offline = offline,
+        onDownload = { viewModel.startDownload(it) },
+        onStopDownload = { viewModel.stopDownload() },
         versionName = remember { context.versionName() },
         onBack = onBack,
         onTheme = { viewModel.setTheme(it) },
@@ -102,6 +127,9 @@ private val FontLicences =listOf("Fredoka" to "Fredoka-OFL.txt", "Nunito" to "Nu
 @Composable
 fun SettingsScreen(
     preferences: UserPreferences,
+    offline: OfflineState,
+    onDownload: (wifiOnly: Boolean) -> Unit,
+    onStopDownload: () -> Unit,
     versionName: String,
     onBack: () -> Unit,
     onTheme: (ThemeMode) -> Unit,
@@ -189,6 +217,9 @@ fun SettingsScreen(
                     )
                 }
             }
+            Section("Offline") {
+                OfflineSection(offline, onDownload, onStopDownload)
+            }
             Section("Home screen") {
                 Text("Live wallpaper", style = DexTheme.type.titleMedium, color = colors.text)
                 Text(
@@ -271,6 +302,46 @@ fun SettingsScreen(
 }
 
 @Composable
+private fun OfflineSection(offline: OfflineState, onDownload: (Boolean) -> Unit, onStop: () -> Unit) {
+    val colors = DexTheme.colors
+    val progress = offline.progress
+    var wifiOnly by rememberSaveable { mutableStateOf(true) }
+    Text("Download every Pokémon", style = DexTheme.type.titleMedium, color = colors.text)
+    Text(
+        "Normally each Pokémon downloads the first time you open it. This fetches them all now, " +
+            "so search, filters and Today work fully offline. It's about 2,000 small requests to PokeAPI, sent gently in the background.",
+        style = DexTheme.type.bodyMedium,
+        color = colors.textSecondary,
+    )
+    if (progress.total > 0) {
+        DexProgressBar(progress.complete / progress.total.toFloat(), Modifier.fillMaxWidth())
+        Text(
+            when {
+                progress.done -> "All %,d Pokémon are downloaded.".format(progress.total)
+                offline.active -> "Downloading: %,d of %,d. You can leave this screen.".format(progress.complete, progress.total)
+                else -> "%,d of %,d Pokémon downloaded.".format(progress.complete, progress.total)
+            },
+            style = DexTheme.type.labelMedium,
+            color = colors.textSecondary,
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+        )
+    }
+    if (!progress.done) {
+        DexSwitchRow(
+            title = "Wi-Fi only",
+            body = "Waits for Wi-Fi before downloading.",
+            checked = wifiOnly,
+            onChange = { wifiOnly = it },
+        )
+        if (offline.active) {
+            DexGlassButton("Stop download", onStop, icon = DexIcons.Close)
+        } else {
+            DexPrimaryButton("Download all", { onDownload(wifiOnly) }, icon = DexIcons.Plus)
+        }
+    }
+}
+
+@Composable
 private fun Section(title: String, content: @Composable () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(title, style = DexTheme.type.labelLarge, color = DexTheme.colors.textSecondary, modifier = Modifier.semantics { heading() })
@@ -298,6 +369,9 @@ private fun Context.versionName(): String =
 @Composable
 private fun SettingsPreview() {
     DexTheme {
-        SettingsScreen(UserPreferences(), "0.1.0", onBack = {}, onTheme = {}, onUnits = {}, onUsageStats = {}, onCrashReports = {}, onCity = {}, onReminder = {}, readLicence = { "" }, onSetWallpaper = {})
+        SettingsScreen(
+            UserPreferences(), OfflineState(DownloadProgress(412, 1025), active = true), onDownload = {}, onStopDownload = {},
+            versionName = "0.1.0", onBack = {}, onTheme = {}, onUnits = {}, onUsageStats = {}, onCrashReports = {}, onCity = {}, onReminder = {}, readLicence = { "" }, onSetWallpaper = {},
+        )
     }
 }

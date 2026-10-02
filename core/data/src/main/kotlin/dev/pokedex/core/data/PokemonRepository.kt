@@ -24,12 +24,25 @@ interface PokemonRepository {
     /** Fetches stats and facts the first time a Pokémon is needed, then never again. */
     suspend fun ensureDetails(id: Int)
 
+    /** How many Pokémon have everything downloaded, out of how many in the index. */
+    fun downloadProgress(): Flow<DownloadProgress>
+
+    /**
+     * Fetches details for every Pokémon still missing them, at most four requests at a time.
+     * Returns how many are still missing afterwards (failures are retried on the next run).
+     */
+    suspend fun downloadAll(): Int
+
     /** Fetches an evolution chain the first time it's needed. */
     suspend fun ensureEvolution(chainId: Int)
 
     suspend fun setCaught(id: Int, caught: Boolean)
     suspend fun toggleFavourite(id: Int)
     suspend fun markSeen(id: Int)
+}
+
+data class DownloadProgress(val complete: Int, val total: Int) {
+    val done: Boolean get() = total > 0 && complete >= total
 }
 
 /** Today's guessing game: one result per local date, and the streak built from them. */

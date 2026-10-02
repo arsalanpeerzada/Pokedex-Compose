@@ -18,7 +18,9 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
@@ -132,6 +134,17 @@ class OfflineFirstPokemonRepository @Inject constructor(
                 )
             }
         }
+    }
+
+    override fun downloadProgress(): Flow<DownloadProgress> =
+        combine(pokemonDao.observeCompleteCount(), pokemonDao.observeCount(), ::DownloadProgress)
+
+    override suspend fun downloadAll(): Int {
+        // ensureDetails shares the four request permits, so this never exceeds four at once.
+        coroutineScope {
+            pokemonDao.idsNeedingDetails().forEach { id -> launch { ensureDetails(id) } }
+        }
+        return pokemonDao.idsNeedingDetails().size
     }
 
     override suspend fun ensureEvolution(chainId: Int) {

@@ -21,7 +21,7 @@ App backups are switched off, so none of this is copied to cloud backups or to a
 The home-screen widget and the live wallpaper only show what's already on your phone. They send nothing anywhere.
 
 ## What leaves your phone, and why
-- **Pokémon data** is requested from PokeAPI (pokeapi.co). Artwork and cries are loaded from PokeAPI's public repositories on GitHub (raw.githubusercontent.com). These requests contain no personal information, but, like any web request, they reveal your IP address to those services.
+- **Pokémon data** is requested from PokeAPI (pokeapi.co): each Pokémon the first time you open it, or all of them at once if you choose "Download all" in Settings. Artwork and cries are loaded from PokeAPI's public repositories on GitHub (raw.githubusercontent.com). These requests contain no personal information, but, like any web request, they reveal your IP address to those services.
 - **Weather, only if you add a city:**
   - **Finding your city:** the city name you type is turned into a position by Android's built-in geocoder. On most phones this service is provided by Google Play services.
   - **Fetching the weather:** your city's rounded position (about 1 km) is sent to the weather service. That's Open-Meteo (open-meteo.com), or Google's Weather API if the build has a Google key.

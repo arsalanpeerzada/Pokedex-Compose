@@ -5,3 +5,7 @@ plugins {
 android {
     namespace = "dev.pokedex.feature.settings"
 }
+
+dependencies {
+    implementation(project(":core:sync"))
+}

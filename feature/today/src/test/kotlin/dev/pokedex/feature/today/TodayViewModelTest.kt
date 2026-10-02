@@ -1,6 +1,7 @@
 package dev.pokedex.feature.today
 
 import dev.pokedex.core.data.DailyRepository
+import dev.pokedex.core.data.DownloadProgress
 import dev.pokedex.core.data.PokemonRepository
 import dev.pokedex.core.data.UserPreferencesRepository
 import dev.pokedex.core.domain.TodayPick
@@ -136,6 +137,8 @@ private class FakePokemonRepository(pokemon: List<Pokemon>) : PokemonRepository 
     override suspend fun refreshIndex(): Result<Unit> = Result.success(Unit)
     override suspend fun ensureDetails(id: Int) = Unit
     override suspend fun ensureEvolution(chainId: Int) = Unit
+    override fun downloadProgress(): Flow<DownloadProgress> = flowOf(DownloadProgress(0, 0))
+    override suspend fun downloadAll(): Int = 0
     override suspend fun setCaught(id: Int, caught: Boolean) {
         if (caught) this.caught += id
     }

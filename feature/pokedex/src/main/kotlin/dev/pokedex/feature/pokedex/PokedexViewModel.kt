@@ -3,6 +3,7 @@ package dev.pokedex.feature.pokedex
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.pokedex.core.data.DownloadProgress
 import dev.pokedex.core.data.PokemonRepository
 import dev.pokedex.core.model.Generation
 import dev.pokedex.core.model.Pokemon
@@ -28,10 +29,12 @@ data class PokedexFilters(
     val generations: Set<Generation> = emptySet(),
     val caughtOnly: Boolean = false,
     val favouritesOnly: Boolean = false,
+    val legendaryOnly: Boolean = false,
+    val mythicalOnly: Boolean = false,
     val sort: PokedexSort = PokedexSort.Number,
 ) {
     /** Filters set in the sheet; the quick toggles show their own state. */
-    val sheetCount: Int get() = types.size + generations.size
+    val sheetCount: Int get() = types.size + generations.size + (if (legendaryOnly) 1 else 0) + (if (mythicalOnly) 1 else 0)
     val isDefault: Boolean get() = this == PokedexFilters(sort = sort)
 }
 
@@ -43,6 +46,8 @@ data class PokedexUiState(
     val query: String = "",
     val loading: Boolean = true,
     val failed: Boolean = false,
+    /** Legendary and Mythical come with each Pokémon's details, so they only cover what's downloaded. */
+    val download: DownloadProgress = DownloadProgress(0, 0),
 )
 
 @HiltViewModel
@@ -57,10 +62,10 @@ class PokedexViewModel @Inject constructor(private val repository: PokemonReposi
     val state: StateFlow<PokedexUiState> = combine(
         repository.pokedex(),
         repository.userStates(),
-        sync,
+        combine(sync, repository.downloadProgress(), ::Pair),
         filters,
         query,
-    ) { pokemon, users, s, f, q ->
+    ) { pokemon, users, (s, download), f, q ->
         PokedexUiState(
             pokemon = applyFilters(pokemon, users, f, q),
             totalCount = pokemon.size,
@@ -69,6 +74,7 @@ class PokedexViewModel @Inject constructor(private val repository: PokemonReposi
             query = q,
             loading = pokemon.isEmpty() && s.running,
             failed = pokemon.isEmpty() && s.failed,
+            download = download,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PokedexUiState())
 
@@ -88,6 +94,8 @@ class PokedexViewModel @Inject constructor(private val repository: PokemonReposi
     fun toggleGeneration(generation: Generation) = filters.update { it.copy(generations = it.generations.toggle(generation)) }
     fun toggleCaughtOnly() = filters.update { it.copy(caughtOnly = !it.caughtOnly) }
     fun toggleFavouritesOnly() = filters.update { it.copy(favouritesOnly = !it.favouritesOnly) }
+    fun toggleLegendaryOnly() = filters.update { it.copy(legendaryOnly = !it.legendaryOnly) }
+    fun toggleMythicalOnly() = filters.update { it.copy(mythicalOnly = !it.mythicalOnly) }
     fun setSort(sort: PokedexSort) = filters.update { it.copy(sort = sort) }
     fun clearFilters() = filters.update { PokedexFilters(sort = it.sort) }
 
@@ -105,6 +113,8 @@ class PokedexViewModel @Inject constructor(private val repository: PokemonReposi
                     (f.generations.isEmpty() || p.generation in f.generations) &&
                     (!f.caughtOnly || users[p.id]?.caught == true) &&
                     (!f.favouritesOnly || users[p.id]?.favourite == true) &&
+                    // With both on, either counts: "legendary or mythical".
+                    (!(f.legendaryOnly || f.mythicalOnly) || (f.legendaryOnly && p.isLegendary) || (f.mythicalOnly && p.isMythical)) &&
                     (q.isEmpty() || p.name.contains(q, ignoreCase = true) || p.number.contains(q) || p.id.toString() == q)
             }
             return when (f.sort) {

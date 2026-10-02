@@ -103,6 +103,8 @@ fun PokedexRoute(
             onToggleGeneration = viewModel::toggleGeneration,
             onToggleCaughtOnly = viewModel::toggleCaughtOnly,
             onToggleFavouritesOnly = viewModel::toggleFavouritesOnly,
+            onToggleLegendaryOnly = viewModel::toggleLegendaryOnly,
+            onToggleMythicalOnly = viewModel::toggleMythicalOnly,
             onSort = viewModel::setSort,
             onClearFilters = viewModel::clearFilters,
             onTypeChart = onTypeChart,
@@ -122,6 +124,8 @@ class PokedexActions(
     val onToggleGeneration: (Generation) -> Unit = {},
     val onToggleCaughtOnly: () -> Unit = {},
     val onToggleFavouritesOnly: () -> Unit = {},
+    val onToggleLegendaryOnly: () -> Unit = {},
+    val onToggleMythicalOnly: () -> Unit = {},
     val onSort: (PokedexSort) -> Unit = {},
     val onClearFilters: () -> Unit = {},
     val onTypeChart: () -> Unit = {},
@@ -263,6 +267,20 @@ private fun FiltersSheet(state: PokedexUiState, actions: PokedexActions, onDismi
                 Generation.entries.forEach { gen ->
                     FilterPill(gen.label.removePrefix("Generation "), gen in f.generations, { actions.onToggleGeneration(gen) }, multiSelect = true)
                 }
+            }
+            Text("Rarity", style = DexTheme.type.titleMedium, color = colors.text, modifier = Modifier.semantics { heading() })
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                FilterPill("Legendary", f.legendaryOnly, actions.onToggleLegendaryOnly, multiSelect = true)
+                FilterPill("Mythical", f.mythicalOnly, actions.onToggleMythicalOnly, multiSelect = true)
+            }
+            val download = state.download
+            if (!download.done && download.total > 0) {
+                Text(
+                    "Rarity is known for the %,d Pokémon downloaded so far. Download them all in Settings to cover every one."
+                        .format(download.complete),
+                    style = DexTheme.type.labelMedium,
+                    color = colors.textSecondary,
+                )
             }
             Row(Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                 TextButton(onClick = actions.onClearFilters, enabled = !f.isDefault) {
