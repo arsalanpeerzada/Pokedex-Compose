@@ -73,7 +73,7 @@ Quality bars (measured, not claimed):
 
 | Signal | Source | Notes |
 |---|---|---|
-| Special days | Bundled calendar | Pokémon Day (27 February), Halloween (Ghost), New Year's Eve (Fire, for the fireworks), plus national days per country. Religious festivals: open decision. National days built on 1 October 2026, each checked against an official source and favouring Fire and Fairy ("celebration", first draft): Germany 3 October ([bundesregierung.de](https://www.bundesregierung.de/breg-de/service/tag-der-deutschen-einheit-442686)), France 14 July ([elysee.fr](https://www.elysee.fr/en/french-presidency/bastille-day-14-july)), the Netherlands 27 April, or 26 April when the 27th is a Sunday ([koninklijkhuis.nl](https://www.koninklijkhuis.nl/onderwerpen/activiteiten-en-werkzaamheden/koningsdag)), and the United States 4 July ([usa.gov](https://www.usa.gov/holidays)). Pakistan is not added yet: no official source could be read that day |
+| Special days | Bundled calendar | Pokémon Day (27 February), Halloween (Ghost), New Year's Eve (Fire, for the fireworks), plus national days per country. Religious festivals: open decision. National days built on 1 October 2026, each checked against an official source and favouring Fire and Fairy ("celebration", first draft): Germany 3 October ([bundesregierung.de](https://www.bundesregierung.de/breg-de/service/tag-der-deutschen-einheit-442686)), France 14 July ([elysee.fr](https://www.elysee.fr/en/french-presidency/bastille-day-14-july)), the Netherlands 27 April, or 26 April when the 27th is a Sunday ([koninklijkhuis.nl](https://www.koninklijkhuis.nl/onderwerpen/activiteiten-en-werkzaamheden/koningsdag)), the United States 4 July ([usa.gov](https://www.usa.gov/holidays)), and Pakistan 23 March and 14 August (confirmed by the project owner; no official source could be read that day). Religious festivals: not included (decided 1 October 2026) |
 | Season | Date plus hemisphere from latitude | Works in both hemispheres |
 | Time of day | Google Weather `isDaytime`, sunrise and sunset | Dawn, day, dusk, night |
 | Weather | Google Weather current conditions and daily forecast | 40 condition types grouped into the buckets below |
@@ -159,7 +159,12 @@ Deliberately not used: kapt, LiveData, XML layouts, RxJava, Paging 3 (the full i
 
 **Terms that shape the design:**
 - **Attribution:** Google's weather attribution must be visible wherever weather data appears, so the designs reserve space for it (exact wording and styling from the Weather API policies page).
-- **Caching:** weather content may only be cached temporarily. The exact period is in Google's service-specific terms, which I still couldn't read on 30 September 2026 (the page came back truncated). Until it's confirmed, the app keeps readings in memory only, for at most three hours, and never on disk.
+- **Caching:**
+  - Weather content may only be cached temporarily.
+  - On 1 October 2026, Google's own search summary of its [Service Specific Terms](https://cloud.google.com/maps-platform/terms/maps-service-terms) gave these periods: current conditions and hourly forecasts one hour, daily forecasts 24 hours, and "today's forecast" 30 days. The terms page itself still came back truncated, so re-check it before release.
+  - The app follows the stricter reading:
+    - Google's current conditions are kept in memory for one hour.
+    - The saved "Why today?" line and hint use the app's own weather words, never the provider's text.
 - **Attribution as built (30 September 2026):**
   - Google: "Source: Includes weather data from Google", shown next to the weather on Today.
   - Open-Meteo: "Weather data by Open-Meteo.com", with a link. Open-Meteo is the fallback when no Google key is set, and is licensed CC BY 4.0.
@@ -371,12 +376,19 @@ Two-week sprints, each ending with a Substack issue.
 
 ## 12. Open decisions
 
-1. Font pairing: Adventure (default), Arcade or Device (section 7).
-2. Weather refresh interval: every three hours (recommended) or hourly.
-3. Religious festivals in the special-days calendar: include or not.
+None open at the moment.
+
 Decided:
 - Crash reports are off by default, like usage stats (29 September 2026).
 - The application ID is `io.github.arsalanpeerzada.pokedex` (29 September 2026). Code namespaces stay `dev.pokedex.*`.
+- **Font pairing:** Adventure, with Fredoka, Nunito and Silkscreen (1 October 2026).
+- **Religious festivals:** not included. Special days stay secular (1 October 2026).
+- **Weather refresh:**
+  - Google: at most every three hours, with readings kept for one hour, per the summary of Google's terms.
+  - Open-Meteo: readings kept for up to three hours.
+  - Readings stay in memory only (1 October 2026).
+- **Pakistan's national days:** Pakistan Day (23 March) and Independence Day (14 August), confirmed by the project owner (1 October 2026).
+- **The old `DailyPicker`** was removed; the context engine replaced it (1 October 2026).
 
 The Figma plan is settled for now: Starter with a Full seat, revisited only if reads run short (section 7).
 

@@ -45,9 +45,9 @@ enum class TimeOfDay(val phrase: String) { Morning("this morning"), Day("today")
 private val Celebration = setOf(Fire, Fairy)
 
 /**
- * Bundled special days (plan, section 4). National days apply only in their country; each date
- * was checked against an official source on 1 October 2026 (see the plan). Religious festivals
- * are an open decision.
+ * Bundled special days (plan, section 4). National days apply only in their country; their dates
+ * were checked on 1 October 2026 (sources in the plan). Religious festivals are deliberately left
+ * out (decided 1 October 2026).
  */
 enum class SpecialDay(
     val label: String,
@@ -62,6 +62,10 @@ enum class SpecialDay(
     GermanUnityDay("German Unity Day", Celebration, MonthDay.of(10, 3), country = "DE"),
     BastilleDay("Bastille Day", Celebration, MonthDay.of(7, 14), country = "FR"),
     IndependenceDayUs("Independence Day", Celebration, MonthDay.of(7, 4), country = "US"),
+
+    // Confirmed by the project owner on 1 October 2026; no official source could be read that day.
+    PakistanDay("Pakistan Day", Celebration, MonthDay.of(3, 23), country = "PK"),
+    IndependenceDayPk("Independence Day", Celebration, MonthDay.of(8, 14), country = "PK"),
 
     /** 27 April, or the Saturday before when the 27th is a Sunday. */
     KingsDay("King's Day", Celebration, country = "NL"),
@@ -258,7 +262,9 @@ object ContextEngine {
         legendaryMoment: Boolean,
     ): String {
         val place = signals.city?.let { " in $it" }.orEmpty()
-        val prefix = signals.weather?.let { "${it.description}$place ${timeOfDay.phrase}" }
+        // Our own words for the weather, not the provider's text: this line is saved for the whole
+        // day, and weather providers limit how long their content may be kept.
+        val prefix = kind?.let { "${weatherWords(it)}$place ${timeOfDay.phrase}" }
             ?: "${season.label.replaceFirstChar { it.uppercase() }}$place, ${timeOfDay.phrase}"
         val because = buildList {
             if (special != null && (special.speciesId == answer.id || answer.types.any { it in special.types })) add(special.label)
@@ -269,6 +275,16 @@ object ContextEngine {
             if (answer.types.any { it in seasonTypes.getValue(season) }) add("${season.label} favourite")
         }
         return if (because.isEmpty()) "$prefix. A lucky pick: today's signals didn't favour its type." else "$prefix: ${because.joinToString(", ")}."
+    }
+
+    private fun weatherWords(kind: WeatherKind): String = when (kind) {
+        WeatherKind.ClearHot -> "Hot sunshine"
+        WeatherKind.ClearMild -> "Clear skies"
+        WeatherKind.Cloudy -> "Cloudy skies"
+        WeatherKind.Rain -> "Rain"
+        WeatherKind.Thunder -> "Thunderstorms"
+        WeatherKind.Snow -> "Snow"
+        WeatherKind.Wind -> "Strong winds"
     }
 
     private fun hint(signals: Signals, timeOfDay: TimeOfDay, season: Season, special: SpecialDay?): String {

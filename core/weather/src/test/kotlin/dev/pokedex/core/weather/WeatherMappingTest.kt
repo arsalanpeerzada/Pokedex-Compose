@@ -1,6 +1,7 @@
 package dev.pokedex.core.weather
 
 import dev.pokedex.core.model.WeatherBucket
+import dev.pokedex.core.model.WeatherProvider
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -37,6 +38,25 @@ class WeatherMappingTest {
         assertEquals(WeatherBucket.Snow, openMeteoBucket(86, 5.0))
         assertEquals(WeatherBucket.Thunder, openMeteoBucket(95, 5.0))
         assertEquals(WeatherBucket.Wind, openMeteoBucket(1, WINDY_KMH))
+    }
+
+    @Test
+    fun `google readings expire after an hour and google is asked at most every three`() {
+        val hour = 60 * 60 * 1000L
+        val google = CachePolicy.of(WeatherProvider.Google)
+        assertEquals(true, google.fresh(cachedAt = 0, now = hour - 1))
+        assertEquals(false, google.fresh(cachedAt = 0, now = hour))
+        assertEquals(true, google.mayFetch(lastFetchAt = 0, now = 5))
+        assertEquals(false, google.mayFetch(lastFetchAt = hour, now = 3 * hour))
+        assertEquals(true, google.mayFetch(lastFetchAt = hour, now = 4 * hour))
+    }
+
+    @Test
+    fun `open-meteo readings last three hours and it can be asked any time`() {
+        val hour = 60 * 60 * 1000L
+        val openMeteo = CachePolicy.of(WeatherProvider.OpenMeteo)
+        assertEquals(true, openMeteo.fresh(cachedAt = 0, now = 3 * hour - 1))
+        assertEquals(true, openMeteo.mayFetch(lastFetchAt = hour, now = hour + 1))
     }
 
     @Test

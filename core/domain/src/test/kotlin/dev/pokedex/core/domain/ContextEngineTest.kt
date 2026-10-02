@@ -126,6 +126,9 @@ class ContextEngineTest {
         assertEquals(null, ContextEngine.specialDay(unity, null))
         assertEquals(SpecialDay.BastilleDay, ContextEngine.specialDay(LocalDate.of(2026, 7, 14), "FR"))
         assertEquals(SpecialDay.IndependenceDayUs, ContextEngine.specialDay(LocalDate.of(2026, 7, 4), "US"))
+        assertEquals(SpecialDay.PakistanDay, ContextEngine.specialDay(LocalDate.of(2027, 3, 23), "PK"))
+        assertEquals(SpecialDay.IndependenceDayPk, ContextEngine.specialDay(LocalDate.of(2027, 8, 14), "PK"))
+        assertEquals(null, ContextEngine.specialDay(LocalDate.of(2027, 8, 14), "US"))
     }
 
     @Test
@@ -164,6 +167,8 @@ class ContextEngineTest {
             .first { ContextEngine.pick(pokedex, signals(date = it, weather = thunder))!!.answer.types.contains(PokemonType.Electric) }
         val pick = ContextEngine.pick(pokedex, signals(date = electricDay, weather = thunder))!!
         assertTrue(pick.reason, pick.reason.contains("Electric weather"))
-        assertTrue(pick.reason, pick.reason.startsWith("Thunder in Leeds"))
+        assertTrue(pick.reason, pick.reason.startsWith("Thunderstorms in Leeds"))
+        // The provider's own text (here the bucket name) is never saved in the reason.
+        assertFalse(pick.reason, pick.reason.startsWith("Thunder in"))
     }
 }

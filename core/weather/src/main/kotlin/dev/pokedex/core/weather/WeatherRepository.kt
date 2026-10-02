@@ -27,9 +27,32 @@ data class CityLocation(val name: String, val latitude: Double, val longitude: D
 private data class Geocoded(val latitude: Double, val longitude: Double, val country: String?)
 
 /**
+ * How long a reading may be kept, and how often a provider may be asked. Readings live in memory
+ * only. Google's terms allow current conditions to be cached temporarily; a summary of its service
+ * terms gives one hour, which we follow (the full terms page couldn't be read on 1 October 2026).
+ * Google is asked at most every three hours, to stay inside the free monthly calls (plan, section 6).
+ */
+internal data class CachePolicy(val maxAgeMillis: Long, val minFetchIntervalMillis: Long) {
+
+    /** True when [cachedAt] is recent enough to show. */
+    fun fresh(cachedAt: Long, now: Long) = now - cachedAt < maxAgeMillis
+
+    /** True when the provider may be asked again, given the last successful fetch. */
+    fun mayFetch(lastFetchAt: Long, now: Long) = lastFetchAt == 0L || now - lastFetchAt >= minFetchIntervalMillis
+
+    companion object {
+        private const val HOUR = 60 * 60 * 1000L
+        fun of(provider: WeatherProvider) = when (provider) {
+            WeatherProvider.Google -> CachePolicy(maxAgeMillis = HOUR, minFetchIntervalMillis = 3 * HOUR)
+            WeatherProvider.OpenMeteo -> CachePolicy(maxAgeMillis = 3 * HOUR, minFetchIntervalMillis = 0)
+        }
+    }
+}
+
+/**
  * Current weather for the user's city. Google Weather when a key is configured, otherwise
- * Open-Meteo. Readings are kept in memory only, for at most three hours: Google allows only
- * temporary caching, and the exact limit in its terms is still to be confirmed.
+ * Open-Meteo, each under its [CachePolicy]. Between Google's one-hour expiry and the next allowed
+ * fetch there is simply no weather, and Today falls back to the time of day and season.
  */
 @Singleton
 class WeatherRepository @Inject constructor(
@@ -43,8 +66,11 @@ class WeatherRepository @Inject constructor(
 
     val provider: WeatherProvider get() = source.provider
 
+    private val policy = CachePolicy.of(source.provider)
     private val lock = Mutex()
     private var cached: Pair<CityLocation, WeatherReading>? = null
+    private var lastFetchAt = 0L
+    private var lastFetchCity: CityLocation? = null
 
     /** The user's city with its position, looking it up once if needed. Null without a city. */
     suspend fun city(): CityLocation? {
@@ -63,7 +89,12 @@ class WeatherRepository @Inject constructor(
     suspend fun current(): WeatherReading? = lock.withLock {
         val city = city() ?: return@withLock null
         val now = System.currentTimeMillis()
-        cached?.let { (at, reading) -> if (at == city && now - reading.fetchedAtMillis < MAX_AGE_MILLIS) return@withLock reading }
+        cached?.let { (at, reading) -> if (at == city && policy.fresh(reading.fetchedAtMillis, now)) return@withLock reading }
+        // Expired readings are dropped, never shown.
+        cached = null
+        // A new city always gets a fetch; otherwise respect the provider's interval.
+        if (city != lastFetchCity) lastFetchAt = 0L
+        if (!policy.mayFetch(lastFetchAt, now)) return@withLock null
         val fresh = try {
             withTimeoutOrNull(TIMEOUT_MILLIS) { source.current(city.latitude, city.longitude) }
         } catch (e: CancellationException) {
@@ -71,8 +102,12 @@ class WeatherRepository @Inject constructor(
         } catch (_: Exception) {
             null
         }
-        if (fresh != null) cached = city to fresh
-        fresh ?: cached?.takeIf { it.first == city && now - it.second.fetchedAtMillis < MAX_AGE_MILLIS }?.second
+        if (fresh != null) {
+            cached = city to fresh
+            lastFetchAt = now
+            lastFetchCity = city
+        }
+        fresh
     }
 
     /** Android's own geocoder. Returns null if the city isn't found or no geocoder is available. */
@@ -108,7 +143,6 @@ class WeatherRepository @Inject constructor(
     }
 
     private companion object {
-        const val MAX_AGE_MILLIS = 3 * 60 * 60 * 1000L
         const val TIMEOUT_MILLIS = 8_000L
     }
 }

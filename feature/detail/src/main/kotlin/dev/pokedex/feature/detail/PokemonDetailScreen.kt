@@ -153,7 +153,7 @@ fun PokemonDetailScreen(
     onBack: () -> Unit,
     onOpenPokemon: (Int) -> Unit,
     onToggleCaught: () -> Unit,
-    onCompare: () -> Unit = {},
+    onCompare: () -> Unit,
     onFavourite: () -> Unit,
     onShare: () -> Unit,
     onPlayCry: () -> Unit,
@@ -458,7 +458,7 @@ private fun PokemonDetailScreenPreview() {
         PokemonDetailScreen(
             SampleData.pikachu, caught = false, favourite = true, cryPlaying = false,
             chart = TypeChart.Empty, evolution = emptyList(), teams = emptyList(), units = Units.Metric, onAddToTeam = {}, onAddToNewTeam = {},
-            onBack = {}, onOpenPokemon = {}, onToggleCaught = {}, onFavourite = {}, onShare = {}, onPlayCry = {},
+            onBack = {}, onOpenPokemon = {}, onToggleCaught = {}, onCompare = {}, onFavourite = {}, onShare = {}, onPlayCry = {},
         )
     }
 }
