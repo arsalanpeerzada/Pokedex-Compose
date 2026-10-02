@@ -21,6 +21,9 @@ datastore = "1.2.1"
 coroutines = "1.11.0"
 junit = "4.13.2"
 robolectric = "4.17"
+# Checked on the Gradle Plugin Portal and Maven Central on 2 October 2026.
+spotless = "8.10.3"
+ktlint = "1.8.0"
 glance = "1.2.0"
 work = "2.12.0"
 
@@ -77,6 +80,7 @@ compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 room = { id = "androidx.room", version.ref = "room" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 
 # Our own convention plugins, from build-logic
 pokedex-android-library = { id = "pokedex.android.library" }

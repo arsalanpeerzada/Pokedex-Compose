@@ -1,0 +1,23 @@
+# Weekly pull requests for new library and GitHub Actions versions. CI checks each one.
+# Dependabot reads gradle/libs.versions.toml, where every version in this project lives.
+version: 2
+updates:
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      # Libraries that are released together, so they're updated together.
+      androidx:
+        patterns: ["androidx.*"]
+      kotlin-and-ksp:
+        patterns: ["org.jetbrains.kotlin*", "com.google.devtools.ksp*", "org.jetbrains.kotlinx*"]
+      ktor:
+        patterns: ["io.ktor*"]
+      hilt:
+        patterns: ["com.google.dagger*"]
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

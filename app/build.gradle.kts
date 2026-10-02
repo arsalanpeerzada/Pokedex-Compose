@@ -1,8 +1,16 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+}
+
+// Release signing comes from keystore.properties, which Git ignores (see keystore.properties.example).
+// Without it, release builds are simply unsigned, which is what CI builds.
+val keystore = Properties().apply {
+    rootProject.file("keystore.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
 }
 
 android {
@@ -14,8 +22,20 @@ android {
         applicationId = "io.github.arsalanpeerzada.pokedex"
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1.0"
+        // Feature-complete for v1; 1.0.0 follows a check on a real device.
+        versionCode = 2
+        versionName = "0.9.0"
+    }
+
+    signingConfigs {
+        if (keystore.isNotEmpty()) {
+            create("release") {
+                storeFile = rootProject.file(keystore.getProperty("storeFile"))
+                storePassword = keystore.getProperty("storePassword")
+                keyAlias = keystore.getProperty("keyAlias")
+                keyPassword = keystore.getProperty("keyPassword")
+            }
+        }
     }
 
     buildTypes {
@@ -23,6 +43,7 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
+            signingConfigs.findByName("release")?.let { signingConfig = it }
         }
     }
     compileOptions {

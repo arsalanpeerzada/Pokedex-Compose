@@ -13,3 +13,4 @@ google-services.json
 *.jks
 *.keystore
 secrets.properties
+keystore.properties

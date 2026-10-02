@@ -343,7 +343,26 @@ Two-week sprints, each ending with a Substack issue.
   - From 600dp wide, a navigation rail replaces the bottom bar.
   - Lists show their detail alongside where there's room, via Material 3 adaptive's list-detail scene strategy 1.3.0.
   - The grids add columns as the window grows.
-  - Shared-element transitions are phone-only, because side by side the same artwork can be on screen twice. A form whose name includes a region gets a neutral label, such as "Vulpix, alternate form". Other forms read naturally, for example "Mega Charizard X" or "Rotom (Heat)".
+  - Shared-element transitions are phone-only, because side by side the same artwork can be on screen twice.
+- Later on day 3:
+  - Type chart Attack and Defend views for phones.
+  - Team Builder suggestions.
+  - Compare.
+  - The live wallpaper (planned for v2).
+  - Pakistan's national days, and the caching and privacy updates.
+
+**Day 4 (2 October 2026), branch `day-4`, wrap-up.**
+- **Build:**
+  - Convention plugins in `build-logic` (library, Compose, Hilt and feature), so module build files only hold their own dependencies.
+  - Release signing reads a git-ignored `keystore.properties`.
+  - Version 0.9.0.
+- **Offline:**
+  - An optional "Download all" (`:core:sync`, WorkManager), Wi-Fi only by default and resumable.
+  - Legendary and Mythical filters, which cover whatever has been downloaded.
+- **Upkeep:**
+  - Dependabot for weekly library and Actions updates. It reads the version catalogue; Dependabot was chosen over Renovate because it needs no app installed.
+  - ktlint through Spotless, available on demand but not yet in CI. Adding it to CI needs a one-off reformat of about 93 files, which waits for the owner's go-ahead.
+- **v1 is feature-complete.** What's left needs a device, an account or a person; the list is in the README under "Where things stand". A form whose name includes a region gets a neutral label, such as "Vulpix, alternate form". Other forms read naturally, for example "Mega Charizard X" or "Rotom (Heat)".
 
 ## 9. Distribution
 
