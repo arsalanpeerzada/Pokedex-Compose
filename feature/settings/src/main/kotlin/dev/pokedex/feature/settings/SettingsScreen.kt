@@ -1,6 +1,10 @@
 package dev.pokedex.feature.settings
 
+import android.app.WallpaperManager
+import android.content.ActivityNotFoundException
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -38,6 +42,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.pokedex.core.data.UserPreferencesRepository
+import dev.pokedex.core.designsystem.component.DexGlassButton
 import dev.pokedex.core.designsystem.component.DexIconButton
 import dev.pokedex.core.designsystem.component.DexPreviews
 import dev.pokedex.core.designsystem.component.DexSwitchRow
@@ -84,6 +89,7 @@ fun SettingsRoute(onBack: () -> Unit, viewModel: SettingsViewModel = hiltViewMod
         onCrashReports = { viewModel.setCrashReports(it) },
         onCity = { viewModel.setCity(it) },
         onReminder = { viewModel.setReminder(it) },
+        onSetWallpaper = { context.openLiveWallpaperPicker() },
         readLicence = { name -> context.assets.open("licenses/$name").bufferedReader().use { it.readText() } },
     )
 }
@@ -105,6 +111,7 @@ fun SettingsScreen(
     onCity: (String) -> Unit,
     onReminder: (Boolean) -> Unit,
     readLicence: (String) -> String,
+    onSetWallpaper: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = DexTheme.colors
@@ -181,6 +188,15 @@ fun SettingsScreen(
                         color = colors.accent,
                     )
                 }
+            }
+            Section("Home screen") {
+                Text("Live wallpaper", style = DexTheme.type.titleMedium, color = colors.text)
+                Text(
+                    "Today's sky and weather, with today's Pokémon as a silhouette until you guess it.",
+                    style = DexTheme.type.bodyMedium,
+                    color = colors.textSecondary,
+                )
+                DexGlassButton("Set as live wallpaper", onSetWallpaper, icon = DexIcons.Star)
             }
             Section("Privacy") {
                 DexSwitchRow(
@@ -262,6 +278,19 @@ private fun Section(title: String, content: @Composable () -> Unit) {
     }
 }
 
+/** Opens the system preview for our wallpaper, or the general live wallpaper list if a phone has no preview. */
+private fun Context.openLiveWallpaperPicker() {
+    val ours = Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER).putExtra(
+        WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT,
+        ComponentName(packageName, "dev.pokedex.feature.wallpaper.TodayWallpaperService"),
+    )
+    try {
+        startActivity(ours)
+    } catch (_: ActivityNotFoundException) {
+        runCatching { startActivity(Intent(WallpaperManager.ACTION_LIVE_WALLPAPER_CHOOSER)) }
+    }
+}
+
 private fun Context.versionName(): String =
     runCatching { packageManager.getPackageInfo(packageName, 0).versionName }.getOrNull().orEmpty()
 
@@ -269,6 +298,6 @@ private fun Context.versionName(): String =
 @Composable
 private fun SettingsPreview() {
     DexTheme {
-        SettingsScreen(UserPreferences(), "0.1.0", onBack = {}, onTheme = {}, onUnits = {}, onUsageStats = {}, onCrashReports = {}, onCity = {}, onReminder = {}, readLicence = { "" })
+        SettingsScreen(UserPreferences(), "0.1.0", onBack = {}, onTheme = {}, onUnits = {}, onUsageStats = {}, onCrashReports = {}, onCity = {}, onReminder = {}, readLicence = { "" }, onSetWallpaper = {})
     }
 }

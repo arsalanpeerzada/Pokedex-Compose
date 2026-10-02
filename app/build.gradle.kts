@@ -44,6 +44,7 @@ dependencies {
     implementation(project(":feature:teams"))
     implementation(project(":feature:widget"))
     implementation(project(":feature:reminder"))
+    implementation(project(":feature:wallpaper"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

@@ -34,4 +34,5 @@ include(
     ":feature:teams",
     ":feature:widget",
     ":feature:reminder",
+    ":feature:wallpaper",
 )

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="wallpaper_label">Pokedex: Today</string>
+    <string name="wallpaper_description">Today\'s weather and today\'s Pokémon, as a silhouette until you guess it in the app.</string>
+</resources>
