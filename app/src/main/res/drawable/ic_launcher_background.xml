@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Original icon: Dex Red to Electric Yellow. No Poké Ball or official Pokédex art. -->
+<!-- Deep night blue, from Today's night sky, so both halves of the ball stand out. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
@@ -12,8 +12,8 @@
                 android:type="linear"
                 android:startX="0" android:startY="0"
                 android:endX="108" android:endY="108"
-                android:startColor="#FFD62246"
-                android:endColor="#FFFF7A1A" />
+                android:startColor="#FF3B3F9E"
+                android:endColor="#FF0F1240" />
         </aapt:attr>
     </path>
 </vector>

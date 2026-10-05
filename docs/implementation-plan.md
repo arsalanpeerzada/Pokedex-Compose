@@ -408,6 +408,8 @@ Decided:
   - Readings stay in memory only (1 October 2026).
 - **Pakistan's national days:** Pakistan Day (23 March) and Independence Day (14 August), confirmed by the project owner (1 October 2026).
 - **The old `DailyPicker`** was removed; the context engine replaced it (1 October 2026).
+- **Launcher icon:** a classic Poké Ball, chosen by the owner for personal builds after the trademark risk was raised (5 October 2026). Before any public release, replace it with an original design.
+- **Project wrapped up (5 October 2026):** the owner tested it on the emulator, with the widget and wallpaper working, and called v1 done. No further development is planned.
 
 The Figma plan is settled for now: Starter with a Full seat, revisited only if reads run short (section 7).
 

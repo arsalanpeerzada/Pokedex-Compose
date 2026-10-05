@@ -80,7 +80,7 @@ Git ignores `secrets.properties`, `keystore.properties` and keystores. Never com
 **Later (v2):** city search with Places Autocomplete, the "World today" map, real-size AR, and Tap-to-Dex.
 
 ## Notices
-Unofficial fan project for learning. Pokémon and all related names are trademarks of their respective owners. Not affiliated with or endorsed by Nintendo, Game Freak or The Pokémon Company. Pokémon data, artwork and cries come from PokeAPI.
+Unofficial fan project for learning. Pokémon and all related names are trademarks of their respective owners. The launcher icon is a classic Poké Ball, the owner's choice for personal builds. The Poké Ball design is a trademark of Nintendo and The Pokémon Company, so replace the icon with an original design before publishing the app anywhere. Not affiliated with or endorsed by Nintendo, Game Freak or The Pokémon Company. Pokémon data, artwork and cries come from PokeAPI.
 
 Weather data comes from Open-Meteo (CC BY 4.0), or from Google when a Google key is configured. The app shows each provider's attribution next to the weather.
 
