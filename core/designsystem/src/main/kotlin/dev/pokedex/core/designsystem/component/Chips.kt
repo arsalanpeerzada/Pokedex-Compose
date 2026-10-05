@@ -133,6 +133,8 @@ fun TypeTag(type: PokemonType, contentColor: Color, modifier: Modifier = Modifie
         text = type.displayName,
         style = DexTheme.type.labelSmall,
         color = contentColor,
+        maxLines = 1,
+        softWrap = false,
         modifier = modifier
             .clip(DexShape.full)
             .background(Color.White.copy(alpha = if (onWhiteText) 0.22f else 0.45f))

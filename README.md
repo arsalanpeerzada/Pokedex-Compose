@@ -75,7 +75,7 @@ Git ignores `secrets.properties`, `keystore.properties` and keystores. Never com
 2. A TalkBack walk-through, then Baseline Profiles and screenshot tests, which also need a device.
 3. Firebase on the owner's personal account: Crashlytics and Analytics (opt-in, switches already in Settings) and Remote Config for the engine's weights.
 4. A qualified review of the draft privacy policy, and a check of Google's full weather caching terms if a Google key is used.
-5. A signing key, then Firebase App Distribution, then Play.
+5. A signing key, then Firebase App Distribution, then Play. The store listing, graphics and App content answers are ready in [play-store/](play-store/README.md).
 
 **Later (v2):** city search with Places Autocomplete, the "World today" map, real-size AR, and Tap-to-Dex.
 

@@ -1,8 +1,13 @@
 # Pokedex privacy policy
 
-> **Draft, not yet reviewed.** This describes what the app does as of 1 October 2026. It is not legal advice. Have it reviewed before publishing it or releasing the app to the public, especially the "Children" section below.
+> **Draft, not yet reviewed.** This describes what the app does as of 5 October 2026. It is not legal advice. Have it reviewed before publishing it or releasing the app to the public, especially the "Children" section below. Remove this note, and fill in the two placeholders under "Who makes Pokedex", once it has been reviewed.
+
+**Last updated:** 5 October 2026
 
 Pokedex is an unofficial, non-commercial fan app built as a personal learning project. It has no accounts, no adverts and no in-app purchases.
+
+## Who makes Pokedex
+Pokedex is made and published on Google Play by [developer name, as shown on Google Play], an individual developer. That developer is responsible for the app's handling of your data. Contact details are at the end of this policy.
 
 ## What stays on your phone
 - **The downloaded Pokédex:** names, types, stats, entries, forms and evolution chains, cached from PokeAPI. Artwork and cries are also cached so the app works offline.
@@ -28,6 +33,13 @@ The home-screen widget and the live wallpaper only show what's already on your p
   - **Keeping it:** readings are kept in memory only, never written to storage. Google's are kept for up to one hour and Open-Meteo's for up to three.
 - **Opening links:** links in Settings, such as this policy, open in your browser.
 
+## Keeping and deleting your data
+- **On your phone:** everything above stays until you delete it. Clearing the app's storage in Android's settings, or uninstalling the app, deletes all of it. Removing the city in Settings deletes the city and its position. Earlier days' "Why today?" lines that named it stay in your history until you clear the app's storage.
+- **Off your phone:** the developer runs no server and keeps no copy of your data, so there is nothing to ask the developer to delete. The services the app contacts (PokeAPI, GitHub, Open-Meteo, Google) handle requests under their own privacy policies.
+
+## Security
+Every request the app makes uses an encrypted connection (HTTPS).
+
 ## What the app doesn't do
 - It doesn't use your device's location or GPS; you type a city instead.
 - It has no accounts and collects no names, email addresses or contacts.
@@ -40,7 +52,12 @@ Pokémon is popular with children. The app has no accounts, no adverts, no chat 
 ## Changes to this policy
 If the app's handling of data changes, this page will be updated before the change ships, with the date at the top.
 
+## Google Play
+If you install Pokedex from Google Play, Google handles the download, updates and any reviews you leave, under Google's own privacy policy. Through Google Play Console, the developer sees the statistics Google gives every developer: aggregated figures such as install counts, and crash reports from phones whose owners let Android share diagnostics with Google. Reviews are public.
+
 ## Contact
-Questions or requests: open an issue at https://github.com/arsalanpeerzada/Pokedex-Compose/issues.
+Questions or requests about this policy or your data:
+- Email: [contact email]
+- Or open an issue at https://github.com/arsalanpeerzada/Pokedex-Compose/issues. Issues are public, so don't include personal details.
 
 Pokémon and all related names are trademarks of their respective owners. Pokedex is not affiliated with or endorsed by Nintendo, Game Freak or The Pokémon Company.

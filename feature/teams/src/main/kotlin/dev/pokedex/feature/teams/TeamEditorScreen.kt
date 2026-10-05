@@ -230,7 +230,11 @@ private fun SlotCard(member: Pokemon?, slot: Int, onAdd: () -> Unit, onOpen: () 
                 Column(Modifier.fillMaxWidth().padding(top = 8.dp, start = 6.dp, end = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     PokemonArtwork(pokemon, size = 72.dp, glowAlpha = 0.35f)
                     Text(pokemon.name, style = DexTheme.type.labelLarge, color = colors.text, maxLines = 1, textAlign = TextAlign.Center)
-                    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                    // A second type moves to its own line when the card is too narrow for both.
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterHorizontally),
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
                         pokemon.types.forEach { TypeTag(it, colors.text) }
                     }
                 }

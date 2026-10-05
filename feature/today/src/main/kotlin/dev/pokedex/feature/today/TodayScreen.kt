@@ -379,7 +379,7 @@ private fun StoryCard(pokemon: Pokemon, reason: String?) {
         val entries = pokemon.storyEntries
         when {
             entries == null -> StorySection("Its story", "Loading the Pokédex entries…")
-            entries.isNotEmpty() -> Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            entries.isNotEmpty() -> Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("Its story", style = DexTheme.type.titleMedium, color = colors.onScene, modifier = Modifier.semantics { heading() })
                 entries.forEach { entry ->
                     Text(entry.text, style = DexTheme.type.bodyMedium, color = colors.onScene)
@@ -393,7 +393,8 @@ private fun StoryCard(pokemon: Pokemon, reason: String?) {
 @Composable
 private fun StorySection(title: String, body: String) {
     val colors = DexTheme.colors
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    // Full width, so the card's centring doesn't indent each section by a different amount.
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(title, style = DexTheme.type.titleMedium, color = colors.onScene, modifier = Modifier.semantics { heading() })
         Text(body, style = DexTheme.type.bodyMedium, color = colors.onScene)
     }
