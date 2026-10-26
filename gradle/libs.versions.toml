@@ -1,7 +1,7 @@
 # Versions checked against official release pages and Maven metadata on 29 September 2026.
 [versions]
 agp = "9.4.1"
-kotlin = "2.4.20"
+kotlin = "2.4.21"
 ksp = "2.3.12"
 composeBom = "2026.09.00"
 activityCompose = "1.13.0"
@@ -15,7 +15,7 @@ hilt = "2.60.1"
 androidxHilt = "1.4.0"
 room = "2.8.5"
 ktor = "3.6.0"
-serialization = "1.11.0"
+serialization = "1.12.0"
 # Checked against Maven Central and the AndroidX release page on 30 September 2026.
 datastore = "1.2.1"
 coroutines = "1.11.0"
