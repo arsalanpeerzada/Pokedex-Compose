@@ -17,7 +17,7 @@ room = "2.8.5"
 ktor = "3.6.0"
 serialization = "1.11.0"
 # Checked against Maven Central and the AndroidX release page on 30 September 2026.
-datastore = "1.2.1"
+datastore = "1.3.0"
 coroutines = "1.11.0"
 junit = "4.13.2"
 robolectric = "4.17"
