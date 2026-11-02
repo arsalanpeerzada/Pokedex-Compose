@@ -14,7 +14,7 @@ coil = "3.6.3"
 hilt = "2.60.1"
 androidxHilt = "1.4.0"
 room = "2.8.5"
-ktor = "3.6.0"
+ktor = "3.6.1"
 serialization = "1.11.0"
 # Checked against Maven Central and the AndroidX release page on 30 September 2026.
 datastore = "1.2.1"
